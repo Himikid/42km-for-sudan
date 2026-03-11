@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Run for Sudan | Berlin Marathon Fundraiser</title>
+    <meta
+      name="description"
+      content="Sponsor a kilometre of the Berlin Marathon to support Islamic Relief's work in Sudan."
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              deepGreen: '#0F3D2E',
+              gold: '#D4AF37',
+              cream: '#F8F5EF',
+              dark: '#1F1F1F'
+            },
+            fontFamily: {
+              heading: ['"Playfair Display"', 'serif'],
+              body: ['Inter', 'sans-serif']
+            },
+            boxShadow: {
+              soft: '0 12px 35px rgba(15, 61, 46, 0.12)'
+            }
+          }
+        }
+      };
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="font-body bg-cream text-dark antialiased">
+    <header class="relative overflow-hidden">
+      <div class="hero-gradient absolute inset-0"></div>
+      <div class="relative mx-auto max-w-6xl px-4 pb-20 pt-24 sm:px-6 lg:px-8 lg:pt-28">
+        <div class="hero-content max-w-3xl">
+          <p class="mb-4 inline-flex items-center rounded-full bg-white/60 px-4 py-1 text-sm font-medium text-deepGreen backdrop-blur-sm">
+            Berlin Marathon • 42.195 km
+          </p>
+          <h1 class="font-heading text-5xl font-bold leading-tight text-deepGreen sm:text-6xl">
+            Run for Sudan
+          </h1>
+          <p class="mt-5 text-xl leading-relaxed text-dark/85 sm:text-2xl">
+            Sponsor a kilometre of the Berlin Marathon to help families in Sudan.
+          </p>
+          <p class="mt-4 max-w-2xl text-base leading-7 text-dark/75 sm:text-lg">
+            Every kilometre of the marathon can be sponsored for yourself or as Sadaqah Jariyah.
+          </p>
+          <div class="mt-10 flex flex-wrap gap-4">
+            <a
+              href="#kilometres"
+              class="inline-flex items-center justify-center rounded-full bg-deepGreen px-7 py-3 text-base font-semibold text-cream transition hover:-translate-y-0.5 hover:bg-[#0b3024]"
+            >
+              Sponsor a KM
+            </a>
+            <a
+              href="#impact"
+              class="inline-flex items-center justify-center rounded-full border border-deepGreen/30 bg-white/70 px-7 py-3 text-base font-semibold text-deepGreen transition hover:-translate-y-0.5 hover:border-deepGreen/60 hover:bg-white"
+            >
+              View the Journey
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+        <div class="rounded-2xl bg-white p-6 shadow-soft sm:p-8">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="font-heading text-2xl text-deepGreen sm:text-3xl">Sponsorship Progress</h2>
+            <span id="progressText" class="text-sm font-semibold text-deepGreen sm:text-base"></span>
+          </div>
+          <div class="mt-5 h-4 overflow-hidden rounded-full bg-gray-200">
+            <div id="progressBar" class="h-full rounded-full bg-deepGreen transition-all duration-700 ease-out"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="kilometres" class="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
+        <div class="mb-7 flex items-end justify-between gap-4">
+          <div>
+            <h2 class="font-heading text-3xl text-deepGreen sm:text-4xl">Sponsor a Kilometre</h2>
+            <p class="mt-2 text-sm text-dark/70 sm:text-base">Click any kilometre to view sponsor details and supporters.</p>
+          </div>
+          <div class="rounded-full border border-deepGreen/20 bg-white px-4 py-1.5 text-sm font-medium text-deepGreen">
+            Primary Sponsor: <span class="font-semibold">£85</span>
+          </div>
+        </div>
+
+        <div id="kmGrid" class="grid grid-cols-3 gap-3 sm:gap-4 lg:grid-cols-6"></div>
+      </section>
+
+      <section id="impact" class="bg-deepGreen text-cream">
+        <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+          <div class="max-w-3xl">
+            <h2 class="font-heading text-3xl sm:text-4xl">Why This Matters</h2>
+            <p class="mt-5 text-lg leading-8 text-cream/90">
+              Millions of people in Sudan are facing hunger, displacement, and lack of access to clean water.
+            </p>
+            <p class="mt-4 text-lg leading-8 text-cream/90">
+              Every kilometre sponsored helps provide vital aid through Islamic Relief.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+        <div class="rounded-3xl bg-white p-8 shadow-soft sm:p-12">
+          <h2 class="font-heading text-3xl text-deepGreen sm:text-4xl">Sponsor a Kilometre</h2>
+          <p class="mt-4 max-w-3xl text-lg leading-8 text-dark/80">
+            You can claim a kilometre of the marathon for £85, or support any kilometre with a smaller donation.
+          </p>
+          <p class="mt-2 max-w-3xl text-lg leading-8 text-dark/80">
+            You can dedicate your sponsorship for yourself or as Sadaqah Jariyah.
+          </p>
+          <a
+            href="#kilometres"
+            class="mt-8 inline-flex items-center justify-center rounded-full bg-gold px-7 py-3 text-base font-semibold text-dark transition hover:-translate-y-0.5 hover:bg-[#c39d27]"
+          >
+            Sponsor a KM
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+      <div id="modalBackdrop" class="absolute inset-0 bg-black/55"></div>
+      <div
+        id="modalPanel"
+        class="modal-panel relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl sm:p-7"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalTitle"
+      >
+        <button
+          id="closeModal"
+          class="absolute right-4 top-4 rounded-full p-2 text-dark/50 transition hover:bg-gray-100 hover:text-dark"
+          aria-label="Close"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h3 id="modalTitle" class="font-heading text-3xl text-deepGreen"></h3>
+
+        <div class="mt-5 space-y-4">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-wide text-deepGreen/80">Primary Sponsor</p>
+            <p id="modalPrimary" class="mt-1 text-lg font-medium text-dark"></p>
+          </div>
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-wide text-deepGreen/80">Supporters</p>
+            <ul id="modalSupporters" class="mt-2 space-y-1 text-dark/80"></ul>
+          </div>
+        </div>
+
+        <button
+          class="mt-7 inline-flex items-center justify-center rounded-full bg-deepGreen px-6 py-3 text-sm font-semibold text-cream transition hover:bg-[#0b3024] sm:text-base"
+        >
+          Support this kilometre
+        </button>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
