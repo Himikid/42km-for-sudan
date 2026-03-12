@@ -5,6 +5,26 @@ const CODES_KEY = "marathon:codes";
 const CODES_HISTORY_KEY = "marathon:codes:history";
 const LOCK_PREFIX = "marathon:km-lock:";
 
+function parseStoredRecord(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "object") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 // adds expired record to history, and deletes from code hash
 async function archiveExpiredCode(km, expiredRecord, codesKey, historyKey) {
   const oldCode = expiredRecord.verificationCode;
@@ -14,13 +34,14 @@ async function archiveExpiredCode(km, expiredRecord, codesKey, historyKey) {
 
   await redis.hset(
     historyKey,
-    oldCode,
-    JSON.stringify({
-      km,
-      name: expiredRecord.name,
-      status: "expired",
-      expiredAt: expiredRecord.expiresAt
-    })
+    {
+      [oldCode]: JSON.stringify({
+        km,
+        name: expiredRecord.name,
+        status: "expired",
+        expiredAt: expiredRecord.expiresAt
+      })
+    }
   );
 
   await redis.hdel(codesKey, oldCode);
@@ -73,7 +94,7 @@ export default async function handler(req, res) {
     // get existing reservation for this km and run logic (confirmed, pending, available)
     try {
       const existing = await redis.hget(SPONSORS_KEY, kmField);
-      const record = existing ? JSON.parse(existing) : null;
+      const record = parseStoredRecord(existing);
 
       if (record && record.status === "confirmed") {
         return res.status(409).json({
@@ -98,19 +119,21 @@ export default async function handler(req, res) {
         name: trimmedName,
         message: normalizedMessage,
         status: "pending",
-        expiresAt: now + 3 * 60 * 60 * 1000
+        expiresAt: now + 1 * 60 * 1000
       };
 
       await redis.hset(
         SPONSORS_KEY,
-        kmField,
-        JSON.stringify(newRecord)
+        {
+          [kmField]: JSON.stringify(newRecord)
+        }
       );
 
       await redis.hset(
         CODES_KEY,
-        verificationCode,
-        kmField
+        {
+          [verificationCode]: kmField
+        }
       );
 
       return res.status(200).json({
