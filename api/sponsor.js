@@ -2,7 +2,6 @@ import { redis } from "../lib/redis";
 
 const SPONSORS_KEY = "marathon:sponsors";
 const CODES_KEY = "marathon:codes";
-const CODES_HISTORY_KEY = "marathon:codes:history";
 const LOCK_PREFIX = "marathon:km-lock:";
 
 function parseStoredRecord(value) {
@@ -25,28 +24,6 @@ function parseStoredRecord(value) {
   return null;
 }
 
-// adds expired record to history, and deletes from code hash
-async function archiveExpiredCode(km, expiredRecord, codesKey, historyKey) {
-  const oldCode = expiredRecord.verificationCode;
-  if (!oldCode) {
-    return;
-  }
-
-  await redis.hset(
-    historyKey,
-    {
-      [oldCode]: JSON.stringify({
-        km,
-        name: expiredRecord.name,
-        status: "expired",
-        expiredAt: expiredRecord.expiresAt
-      })
-    }
-  );
-
-  await redis.hdel(codesKey, oldCode);
-}
-
 function generateVerificationCode(km) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let suffix = "";
@@ -55,7 +32,7 @@ function generateVerificationCode(km) {
     suffix += chars[Math.floor(Math.random() * chars.length)];
   }
 
-  return `${km}-${suffix}`;
+  return `KM${km}-${suffix}`;
 }
 
 export default async function handler(req, res) {
@@ -96,30 +73,24 @@ export default async function handler(req, res) {
       const existing = await redis.hget(SPONSORS_KEY, kmField);
       const record = parseStoredRecord(existing);
 
-      if (record && record.status === "confirmed") {
-        return res.status(409).json({
-          error: "This KM has already been sponsored."
-        });
-      }
-
-      if (record && record.status === "pending" && record.expiresAt > now) {
+      // Expiry is metadata only for now; existing records remain reserved until manual cleanup.
+      if (record) {
         return res.status(409).json({
           error: "This KM is currently reserved."
         });
       }
 
-      if (record && record.status === "pending" && record.expiresAt <= now) {
-        await archiveExpiredCode(kmField, record, CODES_KEY, CODES_HISTORY_KEY);
-      }
-
       // create new record
-      const verificationCode = generateVerificationCode(parsedKm);
+      let verificationCode;
+      do {
+        verificationCode = generateVerificationCode(parsedKm);
+      } while (await redis.hexists(CODES_KEY, verificationCode));
       const newRecord = {
         verificationCode,
         name: trimmedName,
         message: normalizedMessage,
         status: "pending",
-        expiresAt: now + 1 * 60 * 1000
+        expiresAt: now + 24 * 60 * 60 * 1000
       };
 
       await redis.hset(
