@@ -27,7 +27,8 @@ body {
 }
 
 .km-tile {
-  min-height: 138px;
+  height: 138px;
+  overflow: hidden;
   border-radius: 1rem;
   border: 1px solid transparent;
   padding: 0.95rem;
@@ -58,6 +59,14 @@ body {
   background: #dbe8df;
   border-color: #bad0c2;
   color: var(--deep-green);
+}
+
+.km-sadaqah {
+  border-width: 2px !important;
+  border-color: #d4af37 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(212, 175, 55, 0.45),
+    0 0 0 2px rgba(212, 175, 55, 0.18);
 }
 
 .km-action-btn {

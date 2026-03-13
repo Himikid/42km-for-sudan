@@ -2,7 +2,15 @@ import { redis } from "../lib/redis";
 
 const SPONSORS_KEY = "marathon:sponsors";
 const CODES_KEY = "marathon:codes";
+const CONTRIBUTORS_KEY = "marathon:contributors";
 const LOCK_PREFIX = "marathon:km-lock:";
+const RATE_LIMIT_PREFIX = "marathon:rate:sponsor:";
+const RATE_LIMIT_WINDOW_SECONDS = 600;
+const RATE_LIMIT_MAX_REQUESTS = 12;
+
+const NAME_MAX = 40;
+const EMAIL_MAX = 120;
+const MESSAGE_MAX = 240;
 
 function parseStoredRecord(value) {
   if (!value) {
@@ -35,87 +43,222 @@ function generateVerificationCode(km) {
   return `KM${km}-${suffix}`;
 }
 
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function normalizeSponsorType(value) {
+  if (value === "group" || value === "sadaqah_jariyah") {
+    return value;
+  }
+  return "individual";
+}
+
+function getClientIp(req) {
+  const xForwardedFor = req.headers["x-forwarded-for"];
+  if (typeof xForwardedFor === "string" && xForwardedFor.trim()) {
+    return xForwardedFor.split(",")[0].trim();
+  }
+
+  if (Array.isArray(xForwardedFor) && xForwardedFor.length > 0) {
+    return xForwardedFor[0];
+  }
+
+  return req.headers["x-real-ip"] || "unknown";
+}
+
+async function enforceRateLimit(req) {
+  const ip = getClientIp(req);
+  const key = `${RATE_LIMIT_PREFIX}${ip}`;
+
+  const count = await redis.incr(key);
+  if (count === 1) {
+    await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
+  }
+
+  return count <= RATE_LIMIT_MAX_REQUESTS;
+}
+
+function sanitizeText(value, maxLen) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim().slice(0, maxLen);
+}
+
+function parseContributorsByKm(rawContributors) {
+  const contributorsByKm = {};
+
+  for (const value of Object.values(rawContributors || {})) {
+    const record = parseStoredRecord(value);
+    if (!record) {
+      continue;
+    }
+
+    const km = Number(record.km);
+    if (!Number.isInteger(km) || km < 1 || km > 42) {
+      continue;
+    }
+
+    if (!contributorsByKm[km]) {
+      contributorsByKm[km] = [];
+    }
+
+    contributorsByKm[km].push({
+      name: sanitizeText(record.name, NAME_MAX) || "Contributor",
+      amount: Number(record.amount) || 0,
+      message: sanitizeText(record.message, MESSAGE_MAX),
+      status: record.status === "confirmed" ? "confirmed" : "pending"
+    });
+  }
+
+  return contributorsByKm;
+}
+
+function toPublicSponsorRecord(record) {
+  return {
+    verificationCode: sanitizeText(record?.verificationCode, 64),
+    sponsor_type: normalizeSponsorType(record?.sponsor_type),
+    name: sanitizeText(record?.name, NAME_MAX),
+    group_name: sanitizeText(record?.group_name, NAME_MAX),
+    for_name: sanitizeText(record?.for_name, NAME_MAX),
+    from_name: sanitizeText(record?.from_name, NAME_MAX),
+    message: sanitizeText(record?.message, MESSAGE_MAX),
+    status: record?.status === "confirmed" ? "confirmed" : "pending",
+    primary_amount: Number(record?.primary_amount ?? 85),
+    verified_amount: Number(record?.verified_amount ?? 0),
+    createdAt: Number(record?.createdAt) || 0,
+    expiresAt: Number(record?.expiresAt) || 0
+  };
+}
+
 export default async function handler(req, res) {
+  if (req.method === "GET") {
+    try {
+      const [rawSponsors, rawContributors] = await Promise.all([
+        redis.hgetall(SPONSORS_KEY),
+        redis.hgetall(CONTRIBUTORS_KEY)
+      ]);
+
+      const sponsors = {};
+      for (const [kmField, value] of Object.entries(rawSponsors || {})) {
+        const km = Number(kmField);
+        const record = parseStoredRecord(value);
+
+        if (!Number.isInteger(km) || km < 1 || km > 42 || !record) {
+          continue;
+        }
+
+        sponsors[km] = toPublicSponsorRecord(record);
+      }
+
+      return res.status(200).json({
+        success: true,
+        sponsors,
+        contributorsByKm: parseContributorsByKm(rawContributors)
+      });
+    } catch {
+      return res.status(500).json({ error: "Unable to load sponsor data" });
+    }
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Post request to reserve a kilometer for sponsorship
-  if (req.method === "POST") {
-    // input fields
-    const { km, name, message } = req.body || {};
-    const parsedKm = Number(km);
-    const trimmedName = typeof name === "string" ? name.trim() : "";
-    const normalizedMessage = typeof message === "string" ? message.trim() : "";
-    const now = Date.now();
+  const allowed = await enforceRateLimit(req);
+  if (!allowed) {
+    return res.status(429).json({ error: "Too many attempts. Please try again shortly." });
+  }
 
-    // fail fast if missing required fields
-    if (!Number.isInteger(parsedKm) || parsedKm < 1 || parsedKm > 42) {
-      return res.status(400).json({ error: "Invalid KM" });
-    }
+  const { km, sponsor_type, name, group_name, for_name, from_name, email, message } = req.body || {};
+  const parsedKm = Number(km);
+  const normalizedSponsorType = normalizeSponsorType(sponsor_type);
+  const trimmedName = sanitizeText(name, NAME_MAX);
+  const trimmedGroupName = sanitizeText(group_name, NAME_MAX);
+  const trimmedForName = sanitizeText(for_name, NAME_MAX);
+  const trimmedFromName = sanitizeText(from_name, NAME_MAX);
+  const trimmedEmail = sanitizeText(email, EMAIL_MAX).toLowerCase();
+  const normalizedMessage = sanitizeText(message, MESSAGE_MAX);
+  const now = Date.now();
 
-    if (!trimmedName) {
-      return res.status(400).json({ error: "Missing fields" });
-    }
+  if (!Number.isInteger(parsedKm) || parsedKm < 1 || parsedKm > 42) {
+    return res.status(400).json({ error: "Invalid KM" });
+  }
 
-    const kmField = String(parsedKm);
-    const lockKey = `${LOCK_PREFIX}${kmField}`;
-    const lockValue = `${now}-${Math.random().toString(36).slice(2)}`;
-    const lockResult = await redis.set(lockKey, lockValue, { nx: true, px: 5000 });
+  if (normalizedSponsorType === "individual" && !trimmedName) {
+    return res.status(400).json({ error: "Missing name" });
+  }
 
-    // Prevent concurrent reserve attempts for the same KM.
-    if (lockResult !== "OK") {
+  if (normalizedSponsorType === "group" && !trimmedGroupName) {
+    return res.status(400).json({ error: "Missing group name" });
+  }
+
+  if (normalizedSponsorType === "sadaqah_jariyah" && (!trimmedForName || !trimmedFromName)) {
+    return res.status(400).json({ error: "Missing sadaqah fields" });
+  }
+
+  if (!trimmedEmail || !isValidEmail(trimmedEmail)) {
+    return res.status(400).json({ error: "Invalid email" });
+  }
+
+  const kmField = String(parsedKm);
+  const lockKey = `${LOCK_PREFIX}${kmField}`;
+  const lockValue = `${now}-${Math.random().toString(36).slice(2)}`;
+  const lockResult = await redis.set(lockKey, lockValue, { nx: true, px: 5000 });
+
+  if (lockResult !== "OK") {
+    return res.status(409).json({ error: "This KM is currently reserved." });
+  }
+
+  try {
+    const existing = await redis.hget(SPONSORS_KEY, kmField);
+    const existingRecord = parseStoredRecord(existing);
+
+    if (existingRecord) {
       return res.status(409).json({ error: "This KM is currently reserved." });
     }
 
-    // get existing reservation for this km and run logic (confirmed, pending, available)
-    try {
-      const existing = await redis.hget(SPONSORS_KEY, kmField);
-      const record = parseStoredRecord(existing);
+    let verificationCode;
+    do {
+      verificationCode = generateVerificationCode(parsedKm);
+    } while (await redis.hexists(CODES_KEY, verificationCode));
 
-      // Expiry is metadata only for now; existing records remain reserved until manual cleanup.
-      if (record) {
-        return res.status(409).json({
-          error: "This KM is currently reserved."
-        });
-      }
+    const newRecord = {
+      verificationCode,
+      sponsor_type: normalizedSponsorType,
+      name: trimmedName,
+      group_name: trimmedGroupName,
+      for_name: trimmedForName,
+      from_name: trimmedFromName,
+      email: trimmedEmail,
+      message: normalizedMessage,
+      status: "pending",
+      primary_amount: 85,
+      verified_amount: 0,
+      createdAt: now,
+      expiresAt: now + 24 * 60 * 60 * 1000
+    };
 
-      // create new record
-      let verificationCode;
-      do {
-        verificationCode = generateVerificationCode(parsedKm);
-      } while (await redis.hexists(CODES_KEY, verificationCode));
-      const newRecord = {
-        verificationCode,
-        name: trimmedName,
-        message: normalizedMessage,
-        status: "pending",
-        expiresAt: now + 24 * 60 * 60 * 1000
-      };
+    await redis
+      .multi()
+      .hset(SPONSORS_KEY, {
+        [kmField]: JSON.stringify(newRecord)
+      })
+      .hset(CODES_KEY, {
+        [verificationCode]: kmField
+      })
+      .exec();
 
-      await redis.hset(
-        SPONSORS_KEY,
-        {
-          [kmField]: JSON.stringify(newRecord)
-        }
-      );
-
-      await redis.hset(
-        CODES_KEY,
-        {
-          [verificationCode]: kmField
-        }
-      );
-
-      return res.status(200).json({
-        success: true,
-        verificationCode
-      });
-    } finally {
-      const currentLockValue = await redis.get(lockKey);
-      if (currentLockValue === lockValue) {
-        await redis.del(lockKey);
-      }
+    return res.status(200).json({
+      success: true,
+      verificationCode
+    });
+  } finally {
+    const currentLockValue = await redis.get(lockKey);
+    if (currentLockValue === lockValue) {
+      await redis.del(lockKey);
     }
   }
 }
