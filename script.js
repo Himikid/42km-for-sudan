@@ -218,6 +218,9 @@
       ...source,
       name: source.name || source.primarySponsor
     });
+    const shareText = buildSponsorShareText(km, source);
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+    const shareUrl = getKmShareUrl(km);
     const sponsorType = meta.sponsorType;
     const summary = getContributionSummary(source, meta, km);
     const amount = Number(summary.verifiedTotal);
@@ -303,8 +306,56 @@
         >
           Contribute to this KM
         </button>
+
+        <div class="rounded-xl border border-deepGreen/12 bg-gray-50 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/70">Share this kilometre</p>
+          <p class="mt-1 text-sm text-dark/75">Invite others to contribute to KM ${km}.</p>
+          <div class="mt-3 grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              id="copyTileShareBtn"
+              class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/25 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+            >
+              Copy Share Text
+            </button>
+            <a
+              href="${whatsappUrl}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex w-full items-center justify-center rounded-full bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-95"
+            >
+              Share on WhatsApp
+            </a>
+          </div>
+          <a
+            href="${shareUrl}"
+            class="mt-2 inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+          >
+            Open Shared Tile Link
+          </a>
+          <p id="tileShareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
+        </div>
       </div>
     `;
+
+    const copyBtn = document.getElementById('copyTileShareBtn');
+    const shareStatus = document.getElementById('tileShareStatus');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await copyToClipboard(shareText);
+          if (shareStatus) {
+            shareStatus.textContent = 'Share text copied.';
+            shareStatus.classList.remove('hidden');
+          }
+        } catch {
+          if (shareStatus) {
+            shareStatus.textContent = 'Unable to copy automatically. Please copy manually.';
+            shareStatus.classList.remove('hidden');
+          }
+        }
+      });
+    }
 
     openModal();
   }
