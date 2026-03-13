@@ -312,26 +312,25 @@
           <div class="mt-3 grid gap-2 sm:grid-cols-2">
             <button
               type="button"
-              id="copyTileShareBtn"
-              class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/25 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
-            >
-              Copy Share Text
-            </button>
-            <a
-              href="${whatsappUrl}"
-              target="_blank"
-              rel="noopener noreferrer"
+              id="tileWhatsappShareBtn"
               class="inline-flex w-full items-center justify-center rounded-full bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-95"
             >
               Share on WhatsApp
-            </a>
+            </button>
+            <button
+              type="button"
+              id="copyTileShareBtn"
+              class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/25 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+            >
+              Copy Share Text (Text)
+            </button>
           </div>
           <button
             type="button"
-            id="shareTileImageBtn"
+            id="downloadTileImageBtn"
             class="mt-2 inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
           >
-            Share Tile Image
+            Download Tile Image
           </button>
           <p id="tileShareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
         </div>
@@ -339,7 +338,8 @@
     `;
 
     const copyBtn = document.getElementById('copyTileShareBtn');
-    const shareImageBtn = document.getElementById('shareTileImageBtn');
+    const whatsappBtn = document.getElementById('tileWhatsappShareBtn');
+    const downloadImageBtn = document.getElementById('downloadTileImageBtn');
     const shareStatus = document.getElementById('tileShareStatus');
     if (copyBtn) {
       copyBtn.addEventListener('click', async () => {
@@ -357,24 +357,46 @@
         }
       });
     }
-    if (shareImageBtn) {
-      shareImageBtn.addEventListener('click', async () => {
+    if (downloadImageBtn) {
+      downloadImageBtn.addEventListener('click', async () => {
         try {
-          const mode = await shareTileImage({
+          const blob = await createTileShareImageBlob(
             km,
-            sponsorData: source,
-            statusLabel: status === 'claimed' ? 'Donation Confirmed' : 'Donation Pending',
-            shareText
-          });
+            source,
+            status === 'claimed' ? 'Donation Confirmed' : 'Donation Pending'
+          );
+          downloadBlob(blob, `km-${km}-42km-for-sudan.png`);
           if (shareStatus) {
-            shareStatus.textContent = mode === 'shared'
-              ? 'Tile image shared.'
-              : 'Tile image downloaded. Attach it in WhatsApp.';
+            shareStatus.textContent = 'Tile image downloaded.';
             shareStatus.classList.remove('hidden');
           }
         } catch {
           if (shareStatus) {
-            shareStatus.textContent = 'Unable to generate share image right now.';
+            shareStatus.textContent = 'Unable to download tile image right now.';
+            shareStatus.classList.remove('hidden');
+          }
+        }
+      });
+    }
+    if (whatsappBtn) {
+      whatsappBtn.addEventListener('click', async () => {
+        try {
+          const mode = await shareToWhatsAppWithImage({
+            km,
+            sponsorData: source,
+            statusLabel: status === 'claimed' ? 'Donation Confirmed' : 'Donation Pending',
+            shareText,
+            whatsappUrl
+          });
+          if (shareStatus) {
+            shareStatus.textContent = mode === 'shared'
+              ? 'Image + text prepared in share sheet. Choose WhatsApp.'
+              : 'Image downloaded and WhatsApp opened with your message.';
+            shareStatus.classList.remove('hidden');
+          }
+        } catch {
+          if (shareStatus) {
+            shareStatus.textContent = 'Unable to open WhatsApp sharing right now.';
             shareStatus.classList.remove('hidden');
           }
         }
@@ -637,28 +659,55 @@
     return blob;
   }
 
-  async function shareTileImage({ km, sponsorData, statusLabel, shareText }) {
-    const blob = await createTileShareImageBlob(km, sponsorData, statusLabel);
-    const file = new File([blob], `km-${km}-42km-for-sudan.png`, { type: 'image/png' });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        title: `KM ${km} • 42km for Sudan`,
-        text: shareText,
-        files: [file]
-      });
-      return 'shared';
-    }
-
+  function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `km-${km}-42km-for-sudan.png`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    return 'downloaded';
+  }
+
+  async function shareToWhatsAppWithImage({ km, sponsorData, statusLabel, shareText, whatsappUrl }) {
+    const blob = await createTileShareImageBlob(km, sponsorData, statusLabel);
+    const file = new File([blob], `km-${km}-42km-for-sudan.png`, { type: 'image/png' });
+
+    if (navigator.share) {
+      const shareCandidates = [
+        {
+          title: `KM ${km} • 42km for Sudan`,
+          text: shareText,
+          files: [file]
+        },
+        {
+          title: `KM ${km} • 42km for Sudan`,
+          text: shareText,
+          url: getKmShareUrl(km),
+          files: [file]
+        },
+        {
+          title: `KM ${km} • 42km for Sudan`,
+          files: [file]
+        }
+      ];
+
+      for (const candidate of shareCandidates) {
+        try {
+          if (!navigator.canShare || !candidate.files || navigator.canShare({ files: candidate.files })) {
+            await navigator.share(candidate);
+            return 'shared';
+          }
+        } catch {
+          // Try the next payload variation.
+        }
+      }
+    }
+
+    downloadBlob(blob, `km-${km}-42km-for-sudan.png`);
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    return 'fallback';
   }
 
   async function parseJsonResponse(response) {
@@ -795,33 +844,33 @@
         <div class="mt-3 grid gap-2 sm:grid-cols-2">
           <button
             type="button"
-            id="copyShareTextBtn"
-            class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/25 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
-          >
-            Copy Share Text
-          </button>
-          <a
-            href="${whatsappUrl}"
-            target="_blank"
-            rel="noopener noreferrer"
+            id="confirmWhatsappShareBtn"
             class="inline-flex w-full items-center justify-center rounded-full bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-95"
           >
             Share on WhatsApp
-          </a>
+          </button>
+          <button
+            type="button"
+            id="copyShareTextBtn"
+            class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/25 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+          >
+            Copy Share Text (Text)
+          </button>
         </div>
         <button
           type="button"
-          id="shareConfirmTileImageBtn"
+          id="downloadConfirmTileImageBtn"
           class="mt-2 inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
         >
-          Share Tile Image
+          Download Tile Image
         </button>
         <p id="shareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
       </div>
     `;
 
     const copyBtn = document.getElementById('copyShareTextBtn');
-    const shareImageBtn = document.getElementById('shareConfirmTileImageBtn');
+    const whatsappBtn = document.getElementById('confirmWhatsappShareBtn');
+    const downloadImageBtn = document.getElementById('downloadConfirmTileImageBtn');
     const shareStatus = document.getElementById('shareStatus');
     if (copyBtn) {
       copyBtn.addEventListener('click', async () => {
@@ -839,24 +888,42 @@
         }
       });
     }
-    if (shareImageBtn) {
-      shareImageBtn.addEventListener('click', async () => {
+    if (downloadImageBtn) {
+      downloadImageBtn.addEventListener('click', async () => {
         try {
-          const mode = await shareTileImage({
-            km,
-            sponsorData,
-            statusLabel: 'Donation Pending',
-            shareText
-          });
+          const blob = await createTileShareImageBlob(km, sponsorData, 'Donation Pending');
+          downloadBlob(blob, `km-${km}-42km-for-sudan.png`);
           if (shareStatus) {
-            shareStatus.textContent = mode === 'shared'
-              ? 'Tile image shared.'
-              : 'Tile image downloaded. Attach it in WhatsApp.';
+            shareStatus.textContent = 'Tile image downloaded.';
             shareStatus.classList.remove('hidden');
           }
         } catch {
           if (shareStatus) {
-            shareStatus.textContent = 'Unable to generate share image right now.';
+            shareStatus.textContent = 'Unable to download tile image right now.';
+            shareStatus.classList.remove('hidden');
+          }
+        }
+      });
+    }
+    if (whatsappBtn) {
+      whatsappBtn.addEventListener('click', async () => {
+        try {
+          const mode = await shareToWhatsAppWithImage({
+            km,
+            sponsorData,
+            statusLabel: 'Donation Pending',
+            shareText,
+            whatsappUrl
+          });
+          if (shareStatus) {
+            shareStatus.textContent = mode === 'shared'
+              ? 'Image + text prepared in share sheet. Choose WhatsApp.'
+              : 'Image downloaded and WhatsApp opened with your message.';
+            shareStatus.classList.remove('hidden');
+          }
+        } catch {
+          if (shareStatus) {
+            shareStatus.textContent = 'Unable to open WhatsApp sharing right now.';
             shareStatus.classList.remove('hidden');
           }
         }
