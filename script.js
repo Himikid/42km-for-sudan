@@ -310,7 +310,6 @@
           <summary class="cursor-pointer list-none text-sm font-semibold text-deepGreen">
             Share options
           </summary>
-          <p class="mt-2 text-sm text-dark/75">Invite others to contribute to KM ${km}.</p>
           <div class="mt-3 space-y-2">
             <button
               type="button"
@@ -785,7 +784,6 @@
         <summary class="cursor-pointer list-none text-sm font-semibold text-deepGreen">
           Share options
         </summary>
-        <p class="mt-2 text-sm text-dark/75">Invite others to contribute to KM ${km}.</p>
         <div class="mt-3 space-y-2">
           <button
             type="button"
