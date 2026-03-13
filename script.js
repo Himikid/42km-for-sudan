@@ -219,7 +219,6 @@
       name: source.name || source.primarySponsor
     });
     const shareText = buildSponsorShareText(km, source);
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
     const sponsorType = meta.sponsorType;
     const summary = getContributionSummary(source, meta, km);
     const amount = Number(summary.verifiedTotal);
@@ -385,13 +384,12 @@
             km,
             sponsorData: source,
             statusLabel: status === 'claimed' ? 'Donation Confirmed' : 'Donation Pending',
-            shareText,
-            whatsappUrl
+            shareText
           });
           if (shareStatus) {
             shareStatus.textContent = mode === 'shared'
               ? 'Image + text prepared in share sheet. Choose WhatsApp.'
-              : 'Image downloaded and WhatsApp opened with your message.';
+              : 'Direct image share is not supported on this browser. Use Download Tile Image.';
             shareStatus.classList.remove('hidden');
           }
         } catch {
@@ -670,7 +668,7 @@
     URL.revokeObjectURL(url);
   }
 
-  async function shareToWhatsAppWithImage({ km, sponsorData, statusLabel, shareText, whatsappUrl }) {
+  async function shareToWhatsAppWithImage({ km, sponsorData, statusLabel, shareText }) {
     const blob = await createTileShareImageBlob(km, sponsorData, statusLabel);
     const file = new File([blob], `km-${km}-42km-for-sudan.png`, { type: 'image/png' });
 
@@ -705,9 +703,7 @@
       }
     }
 
-    downloadBlob(blob, `km-${km}-42km-for-sudan.png`);
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-    return 'fallback';
+    return 'unsupported';
   }
 
   async function parseJsonResponse(response) {
@@ -817,7 +813,6 @@
 
   function renderConfirmation(km, verificationCode, sponsorData) {
     const shareText = buildSponsorShareText(km, sponsorData);
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
     modalTitle.textContent = `KM ${km} Donation Pending`;
     modalContent.innerHTML = `
       <p class="text-dark/80 leading-7">
@@ -912,13 +907,12 @@
             km,
             sponsorData,
             statusLabel: 'Donation Pending',
-            shareText,
-            whatsappUrl
+            shareText
           });
           if (shareStatus) {
             shareStatus.textContent = mode === 'shared'
               ? 'Image + text prepared in share sheet. Choose WhatsApp.'
-              : 'Image downloaded and WhatsApp opened with your message.';
+              : 'Direct image share is not supported on this browser. Use Download Tile Image.';
             shareStatus.classList.remove('hidden');
           }
         } catch {
