@@ -763,7 +763,7 @@
     modalTitle.textContent = `KM ${km} Donation Pending`;
     modalContent.innerHTML = `
       <p class="text-dark/80 leading-7">
-        Please complete your sponsorship by donating on JustGiving and including your verification code.
+        Please complete your sponsorship by donating on JustGiving. <strong>Copy</strong> and include your verification code in the donation message.
       </p>
       <div class="mt-5 rounded-xl border border-deepGreen/20 bg-cream px-4 py-4">
         <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/80">Verification Code</p>
@@ -871,7 +871,7 @@
     modalTitle.textContent = `Contribution Added • KM ${km}`;
     modalContent.innerHTML = `
       <p class="text-dark/80 leading-7">
-        Thank you. Complete your contribution on JustGiving and include your contribution code in the donation message.
+        Thank you. Complete your contribution on JustGiving. <strong>Copy</strong> and include your contribution code in the donation message.
       </p>
       <div class="mt-5 rounded-xl border border-deepGreen/20 bg-cream px-4 py-4">
         <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/80">Contribution Code</p>
