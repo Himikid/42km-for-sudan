@@ -225,4 +225,3 @@ Recommended hardening before sharing publicly:
 - Upstash Redis (`@upstash/redis`)
 
 ---
-If you want, I can also generate a matching `.env.example` and a `SECURITY.md` so contributors can self-serve setup without risking secret leaks.
