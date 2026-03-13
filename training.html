@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Training | Run for Sudan</title>
+    <meta name="description" content="Training page for the Berlin Marathon fundraiser." />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              deepGreen: '#0F3D2E',
+              gold: '#D4AF37',
+              cream: '#F8F5EF',
+              dark: '#1F1F1F'
+            },
+            fontFamily: {
+              heading: ['"Playfair Display"', 'serif'],
+              body: ['Inter', 'sans-serif']
+            },
+            boxShadow: {
+              soft: '0 12px 35px rgba(15, 61, 46, 0.12)'
+            }
+          }
+        }
+      };
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="font-body bg-cream text-dark antialiased">
+    <header class="relative overflow-hidden">
+      <div class="hero-gradient absolute inset-0"></div>
+      <div class="relative mx-auto max-w-6xl px-4 pb-14 pt-16 sm:px-6 lg:px-8">
+        <div class="hero-content max-w-4xl">
+          <p class="mb-4 inline-flex items-center rounded-full bg-white/60 px-4 py-1 text-sm font-medium text-deepGreen backdrop-blur-sm">
+            Training
+          </p>
+          <h1 class="font-heading text-4xl font-bold leading-tight text-deepGreen sm:text-5xl">Marathon Training</h1>
+          <p class="mt-4 text-lg leading-8 text-dark/80">This page is in progress and will include weekly training logs soon.</p>
+          <a href="index.html#kilometres" class="mt-7 inline-flex items-center justify-center rounded-full bg-deepGreen px-6 py-3 text-sm font-semibold text-cream transition hover:bg-[#0b3024]">Back to Home</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+      <section class="rounded-3xl bg-white p-8 shadow-soft sm:p-10">
+        <h2 class="font-heading text-3xl text-deepGreen">Coming Soon</h2>
+        <p class="mt-4 leading-8 text-dark/80">
+          The training dashboard is being built. It will show weekly mileage, long-run targets, pace work and key milestones leading up to Berlin Marathon day.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

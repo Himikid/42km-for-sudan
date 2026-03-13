@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Updates | Run for Sudan</title>
+    <meta name="description" content="Latest marathon fundraiser updates for Sudan relief." />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              deepGreen: '#0F3D2E',
+              gold: '#D4AF37',
+              cream: '#F8F5EF',
+              dark: '#1F1F1F'
+            },
+            fontFamily: {
+              heading: ['"Playfair Display"', 'serif'],
+              body: ['Inter', 'sans-serif']
+            },
+            boxShadow: {
+              soft: '0 12px 35px rgba(15, 61, 46, 0.12)'
+            }
+          }
+        }
+      };
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="font-body bg-cream text-dark antialiased">
+    <header class="relative overflow-hidden">
+      <div class="hero-gradient absolute inset-0"></div>
+      <div class="relative mx-auto max-w-6xl px-4 pb-14 pt-16 sm:px-6 lg:px-8">
+        <div class="hero-content max-w-4xl">
+          <p class="mb-4 inline-flex items-center rounded-full bg-white/60 px-4 py-1 text-sm font-medium text-deepGreen backdrop-blur-sm">
+            Updates
+          </p>
+          <h1 class="font-heading text-4xl font-bold leading-tight text-deepGreen sm:text-5xl">Marathon Updates</h1>
+          <p class="mt-4 text-lg leading-8 text-dark/80">
+            Follow key milestones and fundraising progress on the road to Berlin.
+          </p>
+          <div class="mt-7 flex flex-wrap gap-3">
+            <a href="index.html#kilometres" class="inline-flex items-center justify-center rounded-full bg-deepGreen px-6 py-3 text-sm font-semibold text-cream transition hover:bg-[#0b3024]">Back to Home</a>
+            <a href="training.html" class="inline-flex items-center justify-center rounded-full border border-deepGreen/25 bg-white/70 px-6 py-3 text-sm font-semibold text-deepGreen transition hover:bg-white">Training</a>
+            <a href="how-to-sponsor.html" class="inline-flex items-center justify-center rounded-full border border-deepGreen/25 bg-white/70 px-6 py-3 text-sm font-semibold text-deepGreen transition hover:bg-white">How to Sponsor</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+      <section class="rounded-3xl bg-white p-8 shadow-soft sm:p-10">
+        <h2 class="font-heading text-3xl text-deepGreen">Latest Posts</h2>
+        <p class="mt-3 text-sm text-dark/70">
+          Personal updates from training, fundraising, and the road to Berlin.
+        </p>
+
+        <div class="mt-8 space-y-4">
+          <article class="rounded-2xl border border-deepGreen/10 bg-cream/60 p-5">
+            <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/70">13 Mar 2026</p>
+            <h3 class="mt-2 text-xl font-semibold text-deepGreen">Introducing Myself</h3>
+            <p class="mt-2 leading-7 text-dark/80">
+              My name is Ibrahim and I am from Glasgow. I have enjoyed running on and off for the last few years, and I ran the Great Scottish Run 10K with a personal best of 41:24. I have never gone much beyond 12K, but I enjoy big challenges. This time, I want to take the jump to a full marathon for a meaningful cause and raise support for people in need around the world.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

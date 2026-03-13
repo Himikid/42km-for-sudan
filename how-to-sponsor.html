@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="How to sponsor a Berlin Marathon kilometre fundraiser for Sudan relief."
+    />
+    <title>How to Sponsor | Run for Sudan</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              deepGreen: '#0F3D2E',
+              gold: '#D4AF37',
+              cream: '#F8F5EF',
+              dark: '#1F1F1F'
+            },
+            fontFamily: {
+              heading: ['Playfair Display', 'serif'],
+              body: ['Inter', 'sans-serif']
+            },
+            boxShadow: {
+              soft: '0 16px 35px rgba(15, 61, 46, 0.1)'
+            }
+          }
+        }
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-cream font-body text-dark antialiased">
+    <header class="bg-gradient-to-br from-deepGreen via-[#14503C] to-[#0D3328] text-white">
+      <div class="mx-auto max-w-6xl px-6 py-16 md:py-20">
+        <p class="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-gold">Run for Sudan</p>
+        <h1 class="font-heading text-4xl leading-tight md:text-5xl">How to Sponsor</h1>
+        <p class="mt-5 max-w-3xl text-base text-white/85 md:text-xl">
+          A simple guide to reserve a kilometre or contribute to an already reserved KM.
+        </p>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-6 py-14">
+      <section class="rounded-3xl border border-deepGreen/10 bg-white p-8 shadow-soft md:p-10">
+        <h2 class="font-heading text-3xl text-deepGreen">Step by Step</h2>
+        <div class="mt-8 grid gap-5 md:grid-cols-2">
+          <article class="rounded-2xl border border-deepGreen/10 bg-cream/60 p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-deepGreen/70">Step 1</p>
+            <h3 class="mt-2 text-lg font-semibold text-deepGreen">Pick a kilometre</h3>
+            <p class="mt-2 text-sm text-dark/80">
+              Choose any tile from the 42 KM grid. Available tiles can be reserved as the primary sponsor.
+            </p>
+          </article>
+
+          <article class="rounded-2xl border border-deepGreen/10 bg-cream/60 p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-deepGreen/70">Step 2</p>
+            <h3 class="mt-2 text-lg font-semibold text-deepGreen">Submit your details</h3>
+            <p class="mt-2 text-sm text-dark/80">
+              Complete the form with your name, sponsorship type, and optional message.
+            </p>
+          </article>
+
+          <article class="rounded-2xl border border-deepGreen/10 bg-cream/60 p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-deepGreen/70">Step 3</p>
+            <h3 class="mt-2 text-lg font-semibold text-deepGreen">Use your verification code</h3>
+            <p class="mt-2 text-sm text-dark/80">
+              After submitting, you receive a code. Include that code in your JustGiving donation message.
+            </p>
+          </article>
+
+          <article class="rounded-2xl border border-deepGreen/10 bg-cream/60 p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-deepGreen/70">Step 4</p>
+            <h3 class="mt-2 text-lg font-semibold text-deepGreen">Verification</h3>
+            <p class="mt-2 text-sm text-dark/80">
+              Once payment is confirmed, the admin panel marks your pledge as confirmed on the public tile.
+            </p>
+          </article>
+        </div>
+
+        <div class="mt-8 rounded-2xl border border-gold/40 bg-gold/10 p-6">
+          <h3 class="text-lg font-semibold text-deepGreen">Sponsorship Amounts</h3>
+          <ul class="mt-3 space-y-2 text-sm text-dark/85">
+            <li><strong>Primary sponsor:</strong> £85 to reserve an available kilometre.</li>
+            <li><strong>Contributors:</strong> Any amount can be added to reserved kilometres.</li>
+            <li><strong>Sadaqah Jariyah:</strong> Select the option in the form to dedicate a sponsorship.</li>
+          </ul>
+        </div>
+
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="index.html#kilometres" class="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3 text-sm font-semibold text-dark transition hover:brightness-95">Go to Kilometre Grid</a>
+          <a href="updates.html" class="inline-flex items-center justify-center rounded-full border border-deepGreen/25 bg-white/70 px-6 py-3 text-sm font-semibold text-deepGreen transition hover:bg-white">View Updates</a>
+          <a href="training.html" class="inline-flex items-center justify-center rounded-full border border-deepGreen/25 bg-white/70 px-6 py-3 text-sm font-semibold text-deepGreen transition hover:bg-white">Training</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
