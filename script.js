@@ -219,6 +219,7 @@
       name: source.name || source.primarySponsor
     });
     const shareText = buildSponsorShareText(km, source);
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
     const sponsorType = meta.sponsorType;
     const summary = getContributionSummary(source, meta, km);
     const amount = Number(summary.verifiedTotal);
@@ -305,10 +306,12 @@
           Contribute to this KM
         </button>
 
-        <div class="rounded-xl border border-deepGreen/12 bg-gray-50 p-4">
-          <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/70">Share this kilometre</p>
-          <p class="mt-1 text-sm text-dark/75">Invite others to contribute to KM ${km}.</p>
-          <div class="mt-3 grid gap-2 sm:grid-cols-2">
+        <details class="rounded-xl border border-deepGreen/12 bg-gray-50 p-4">
+          <summary class="cursor-pointer list-none text-sm font-semibold text-deepGreen">
+            Share options
+          </summary>
+          <p class="mt-2 text-sm text-dark/75">Invite others to contribute to KM ${km}.</p>
+          <div class="mt-3 space-y-2">
             <button
               type="button"
               id="tileWhatsappShareBtn"
@@ -323,16 +326,16 @@
             >
               Copy Share Text (Text)
             </button>
+            <button
+              type="button"
+              id="downloadTileImageBtn"
+              class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+            >
+              Download Tile Image
+            </button>
           </div>
-          <button
-            type="button"
-            id="downloadTileImageBtn"
-            class="mt-2 inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
-          >
-            Download Tile Image
-          </button>
           <p id="tileShareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
-        </div>
+        </details>
       </div>
     `;
 
@@ -378,26 +381,8 @@
       });
     }
     if (whatsappBtn) {
-      whatsappBtn.addEventListener('click', async () => {
-        try {
-          const mode = await shareToWhatsAppWithImage({
-            km,
-            sponsorData: source,
-            statusLabel: status === 'claimed' ? 'Donation Confirmed' : 'Donation Pending',
-            shareText
-          });
-          if (shareStatus) {
-            shareStatus.textContent = mode === 'shared'
-              ? 'Image + text prepared in share sheet. Choose WhatsApp.'
-              : 'Direct image share is not supported on this browser. Use Download Tile Image.';
-            shareStatus.classList.remove('hidden');
-          }
-        } catch {
-          if (shareStatus) {
-            shareStatus.textContent = 'Unable to open WhatsApp sharing right now.';
-            shareStatus.classList.remove('hidden');
-          }
-        }
+      whatsappBtn.addEventListener('click', () => {
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
       });
     }
 
@@ -668,44 +653,6 @@
     URL.revokeObjectURL(url);
   }
 
-  async function shareToWhatsAppWithImage({ km, sponsorData, statusLabel, shareText }) {
-    const blob = await createTileShareImageBlob(km, sponsorData, statusLabel);
-    const file = new File([blob], `km-${km}-42km-for-sudan.png`, { type: 'image/png' });
-
-    if (navigator.share) {
-      const shareCandidates = [
-        {
-          title: `KM ${km} • 42km for Sudan`,
-          text: shareText,
-          files: [file]
-        },
-        {
-          title: `KM ${km} • 42km for Sudan`,
-          text: shareText,
-          url: getKmShareUrl(km),
-          files: [file]
-        },
-        {
-          title: `KM ${km} • 42km for Sudan`,
-          files: [file]
-        }
-      ];
-
-      for (const candidate of shareCandidates) {
-        try {
-          if (!navigator.canShare || !candidate.files || navigator.canShare({ files: candidate.files })) {
-            await navigator.share(candidate);
-            return 'shared';
-          }
-        } catch {
-          // Try the next payload variation.
-        }
-      }
-    }
-
-    return 'unsupported';
-  }
-
   async function parseJsonResponse(response) {
     const raw = await response.text();
     if (!raw) {
@@ -813,6 +760,7 @@
 
   function renderConfirmation(km, verificationCode, sponsorData) {
     const shareText = buildSponsorShareText(km, sponsorData);
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
     modalTitle.textContent = `KM ${km} Donation Pending`;
     modalContent.innerHTML = `
       <p class="text-dark/80 leading-7">
@@ -833,10 +781,12 @@
       <p class="mt-4 text-sm leading-6 text-dark/70">
         Example message: "Sponsoring this KM - ${verificationCode.toUpperCase()}"
       </p>
-      <div class="mt-5 rounded-xl border border-deepGreen/12 bg-gray-50 p-4">
-        <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/70">Share this kilometre</p>
-        <p class="mt-1 text-sm text-dark/75">Invite others to contribute to KM ${km}.</p>
-        <div class="mt-3 grid gap-2 sm:grid-cols-2">
+      <details class="mt-5 rounded-xl border border-deepGreen/12 bg-gray-50 p-4">
+        <summary class="cursor-pointer list-none text-sm font-semibold text-deepGreen">
+          Share options
+        </summary>
+        <p class="mt-2 text-sm text-dark/75">Invite others to contribute to KM ${km}.</p>
+        <div class="mt-3 space-y-2">
           <button
             type="button"
             id="confirmWhatsappShareBtn"
@@ -851,16 +801,16 @@
           >
             Copy Share Text (Text)
           </button>
+          <button
+            type="button"
+            id="downloadConfirmTileImageBtn"
+            class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+          >
+            Download Tile Image
+          </button>
         </div>
-        <button
-          type="button"
-          id="downloadConfirmTileImageBtn"
-          class="mt-2 inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
-        >
-          Download Tile Image
-        </button>
         <p id="shareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
-      </div>
+      </details>
     `;
 
     const copyBtn = document.getElementById('copyShareTextBtn');
@@ -901,26 +851,8 @@
       });
     }
     if (whatsappBtn) {
-      whatsappBtn.addEventListener('click', async () => {
-        try {
-          const mode = await shareToWhatsAppWithImage({
-            km,
-            sponsorData,
-            statusLabel: 'Donation Pending',
-            shareText
-          });
-          if (shareStatus) {
-            shareStatus.textContent = mode === 'shared'
-              ? 'Image + text prepared in share sheet. Choose WhatsApp.'
-              : 'Direct image share is not supported on this browser. Use Download Tile Image.';
-            shareStatus.classList.remove('hidden');
-          }
-        } catch {
-          if (shareStatus) {
-            shareStatus.textContent = 'Unable to open WhatsApp sharing right now.';
-            shareStatus.classList.remove('hidden');
-          }
-        }
+      whatsappBtn.addEventListener('click', () => {
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
       });
     }
   }
