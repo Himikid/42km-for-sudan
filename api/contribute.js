@@ -1,4 +1,5 @@
 import { redis } from "../lib/redis";
+import { Resend } from "resend";
 
 const SPONSORS_KEY = "marathon:sponsors";
 const CONTRIBUTORS_KEY = "marathon:contributors";
@@ -8,6 +9,8 @@ const LOCK_PREFIX = "marathon:km-lock:";
 const RATE_LIMIT_PREFIX = "marathon:rate:contribute:";
 const RATE_LIMIT_WINDOW_SECONDS = 600;
 const RATE_LIMIT_MAX_REQUESTS = 20;
+const FROM_EMAIL = "sponsor@42kmforsudan.com";
+const JUSTGIVING_URL = "https://www.justgiving.com/fundraising/ibrahimjaved-6994f535e1c202f790972e93";
 
 const NAME_MAX = 40;
 const EMAIL_MAX = 120;
@@ -40,6 +43,15 @@ function sanitizeText(value, maxLen) {
   }
 
   return value.trim().slice(0, maxLen);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function isValidEmail(email) {
@@ -83,6 +95,70 @@ async function enforceRateLimit(req) {
   }
 
   return count <= RATE_LIMIT_MAX_REQUESTS;
+}
+
+async function sendContributionEmail({ email, name, km, contributionCode }) {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("Missing RESEND_API_KEY");
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const safeName = sanitizeText(name, NAME_MAX) || "there";
+  const safeKm = escapeHtml(km);
+  const safeCode = escapeHtml(contributionCode).toUpperCase();
+
+  const subject = "Your KM Contribution – 42km for Sudan";
+  const text = [
+    `Hi ${safeName},`,
+    "",
+    "Thank you so much for contributing to a sponsored kilometre of 42km for Sudan. Your support genuinely means a lot.",
+    "",
+    "Your contribution details:",
+    `Kilometre: KM ${km}`,
+    `Contribution Code: ${contributionCode.toUpperCase()}`,
+    "",
+    "To complete your contribution, please donate here:",
+    JUSTGIVING_URL,
+    "",
+    "When donating, please include your contribution code in the donation message so I can match your contribution.",
+    "",
+    "Here is a quick update on the situation in Sudan and why this fundraiser matters:",
+    "https://www.youtube.com/watch?v=12OcaORLnTc",
+    "",
+    "Thank you again for your support",
+    "",
+    "Warm regards,",
+    "Ibrahim"
+  ].join("\n");
+
+  const html = `
+    <div style="font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.5;color:#1F1F1F;max-width:560px;margin:0 auto;padding:24px;">
+      <h2 style="margin:0 0 12px;color:#0F3D2E;">Your KM Contribution</h2>
+      <p style="margin:0 0 12px;">Hi ${escapeHtml(safeName)},</p>
+      <p style="margin:0 0 12px;">Thank you so much for contributing to a sponsored kilometre of <strong>42km for Sudan</strong>. Your support genuinely means a lot.</p>
+      <p style="margin:0 0 6px;">Your contribution details:</p>
+      <p style="margin:0 0 6px;"><strong>Kilometre:</strong> KM ${safeKm}</p>
+      <p style="margin:0 0 18px;"><strong>Contribution Code:</strong></p>
+      <div style="display:inline-block;border:1px solid #d9d9d9;background:#f8f5ef;padding:10px 14px;border-radius:10px;font-family:ui-monospace,Menlo,monospace;font-size:20px;letter-spacing:1px;font-weight:700;color:#0F3D2E;">
+        ${safeCode}
+      </div>
+      <p style="margin:18px 0 10px;">To complete your contribution, please donate here:</p>
+      <p style="margin:0 0 18px;"><a href="${JUSTGIVING_URL}" style="color:#0F3D2E;font-weight:600;">Donate on JustGiving</a></p>
+      <p style="margin:0 0 14px;">When donating, please include your contribution code in the donation message so I can match your contribution.</p>
+      <p style="margin:0 0 8px;">Here is a quick update on the situation in Sudan and why this fundraiser matters:</p>
+      <p style="margin:0 0 18px;"><a href="https://www.youtube.com/watch?v=12OcaORLnTc" style="color:#0F3D2E;font-weight:600;">Watch: Sudan Crisis Update</a></p>
+      <p style="margin:0;">Thank you again for your support</p>
+      <p style="margin:10px 0 0;">Warm regards,<br />Ibrahim</p>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject,
+    text,
+    html
+  });
 }
 
 export default async function handler(req, res) {
@@ -162,10 +238,28 @@ export default async function handler(req, res) {
       .sadd(contributorsByKmKey, contributionCode)
       .exec();
 
+    let emailSent = true;
+    try {
+      await sendContributionEmail({
+        email: trimmedEmail,
+        name: trimmedName,
+        km: parsedKm,
+        contributionCode
+      });
+    } catch (emailError) {
+      emailSent = false;
+      console.error("Failed to send contribution confirmation email", {
+        km: parsedKm,
+        email: trimmedEmail,
+        message: emailError?.message || "Unknown error"
+      });
+    }
+
     return res.status(200).json({
       success: true,
       contributionCode,
       baseVerificationCode,
+      emailSent,
       contribution: {
         name: trimmedName,
         amount: normalizedAmount,

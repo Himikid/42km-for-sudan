@@ -1,4 +1,5 @@
 import { redis } from "../lib/redis";
+import { Resend } from "resend";
 
 const SPONSORS_KEY = "marathon:sponsors";
 const CODES_KEY = "marathon:codes";
@@ -7,10 +8,13 @@ const LOCK_PREFIX = "marathon:km-lock:";
 const RATE_LIMIT_PREFIX = "marathon:rate:sponsor:";
 const RATE_LIMIT_WINDOW_SECONDS = 600;
 const RATE_LIMIT_MAX_REQUESTS = 12;
+const FROM_EMAIL = "sponsor@42kmforsudan.com";
+const JUSTGIVING_URL = "https://www.justgiving.com/fundraising/ibrahimjaved-6994f535e1c202f790972e93";
 
 const NAME_MAX = 40;
 const EMAIL_MAX = 120;
 const MESSAGE_MAX = 240;
+const MAX_PRIMARY_AMOUNT = 10000;
 
 function parseStoredRecord(value) {
   if (!value) {
@@ -85,6 +89,93 @@ function sanitizeText(value, maxLen) {
   }
 
   return value.trim().slice(0, maxLen);
+}
+
+function normalizePrimaryAmount(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  const rounded = Math.round(parsed * 100) / 100;
+  if (rounded < 85 || rounded > MAX_PRIMARY_AMOUNT) {
+    return null;
+  }
+
+  return rounded;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+async function sendReservationEmail({ email, km, verificationCode, displayName }) {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("Missing RESEND_API_KEY");
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const safeDisplayName = sanitizeText(displayName, NAME_MAX) || "there";
+  const safeCode = escapeHtml(verificationCode).toUpperCase();
+  const safeKm = escapeHtml(km);
+
+  const subject = "Your KM Reservation – 42km for Sudan";
+  const text = [
+    `Hi ${safeDisplayName},`,
+    "",
+    "Thank you so much for sponsoring a kilometre of 42km for Sudan. Your support genuinely means a lot.",
+    "",
+    "You have reserved:",
+    `Kilometre: KM ${km}`,
+    `Verification Code: ${verificationCode.toUpperCase()}`,
+    "",
+    "To complete your sponsorship, please donate here:",
+    JUSTGIVING_URL,
+    "",
+    "When donating, please include your verification code in the donation message so I can match your contribution to your kilometre.",
+    "",
+    "Here is a quick update on the situation in Sudan and why this fundraiser matters:",
+    "https://www.youtube.com/watch?v=12OcaORLnTc",
+    "",
+    "Thank you again for your support",
+    "",
+    "Warm regards,",
+    "Ibrahim"
+  ].join("\n");
+
+  const html = `
+    <div style="font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.5;color:#1F1F1F;max-width:560px;margin:0 auto;padding:24px;">
+      <h2 style="margin:0 0 12px;color:#0F3D2E;">Your KM Reservation</h2>
+      <p style="margin:0 0 12px;">Hi ${escapeHtml(safeDisplayName)},</p>
+      <p style="margin:0 0 12px;">Thank you so much for sponsoring a kilometre of <strong>42km for Sudan</strong>. Your support genuinely means a lot.</p>
+      <p style="margin:0 0 6px;">You have reserved:</p>
+      <p style="margin:0 0 6px;"><strong>Kilometre:</strong> KM ${safeKm}</p>
+      <p style="margin:0 0 18px;"><strong>Verification Code:</strong></p>
+      <div style="display:inline-block;border:1px solid #d9d9d9;background:#f8f5ef;padding:10px 14px;border-radius:10px;font-family:ui-monospace,Menlo,monospace;font-size:20px;letter-spacing:1px;font-weight:700;color:#0F3D2E;">
+        ${safeCode}
+      </div>
+      <p style="margin:18px 0 10px;">To complete your sponsorship, please donate here:</p>
+      <p style="margin:0 0 18px;"><a href="${JUSTGIVING_URL}" style="color:#0F3D2E;font-weight:600;">Donate on JustGiving</a></p>
+      <p style="margin:0 0 14px;">When donating, please include your verification code in the donation message so I can match your contribution to your kilometre.</p>
+      <p style="margin:0 0 8px;">Here is a quick update on the situation in Sudan and why this fundraiser matters:</p>
+      <p style="margin:0 0 18px;"><a href="https://www.youtube.com/watch?v=12OcaORLnTc" style="color:#0F3D2E;font-weight:600;">Watch: Sudan Crisis Update</a></p>
+      <p style="margin:0;">Thank you again for your support</p>
+      <p style="margin:10px 0 0;">Warm regards,<br />Ibrahim</p>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject,
+    text,
+    html
+  });
 }
 
 function parseContributorsByKm(rawContributors) {
@@ -172,7 +263,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: "Too many attempts. Please try again shortly." });
   }
 
-  const { km, sponsor_type, name, group_name, for_name, from_name, email, message } = req.body || {};
+  const { km, sponsor_type, name, group_name, for_name, from_name, email, amount, message } = req.body || {};
   const parsedKm = Number(km);
   const normalizedSponsorType = normalizeSponsorType(sponsor_type);
   const trimmedName = sanitizeText(name, NAME_MAX);
@@ -180,6 +271,7 @@ export default async function handler(req, res) {
   const trimmedForName = sanitizeText(for_name, NAME_MAX);
   const trimmedFromName = sanitizeText(from_name, NAME_MAX);
   const trimmedEmail = sanitizeText(email, EMAIL_MAX).toLowerCase();
+  const normalizedAmount = normalizePrimaryAmount(amount);
   const normalizedMessage = sanitizeText(message, MESSAGE_MAX);
   const now = Date.now();
 
@@ -201,6 +293,10 @@ export default async function handler(req, res) {
 
   if (!trimmedEmail || !isValidEmail(trimmedEmail)) {
     return res.status(400).json({ error: "Invalid email" });
+  }
+
+  if (normalizedAmount === null) {
+    return res.status(400).json({ error: "Invalid sponsorship amount. Minimum is £85." });
   }
 
   const kmField = String(parsedKm);
@@ -235,7 +331,7 @@ export default async function handler(req, res) {
       email: trimmedEmail,
       message: normalizedMessage,
       status: "pending",
-      primary_amount: 85,
+      primary_amount: normalizedAmount,
       verified_amount: 0,
       createdAt: now,
       expiresAt: now + 24 * 60 * 60 * 1000
@@ -251,9 +347,28 @@ export default async function handler(req, res) {
       })
       .exec();
 
+    let emailSent = true;
+    try {
+      const displayName = trimmedName || trimmedGroupName || trimmedFromName || "there";
+      await sendReservationEmail({
+        email: trimmedEmail,
+        km: parsedKm,
+        verificationCode,
+        displayName
+      });
+    } catch (emailError) {
+      emailSent = false;
+      console.error("Failed to send sponsor confirmation email", {
+        km: parsedKm,
+        email: trimmedEmail,
+        message: emailError?.message || "Unknown error"
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      verificationCode
+      verificationCode,
+      emailSent
     });
   } finally {
     const currentLockValue = await redis.get(lockKey);

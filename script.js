@@ -75,6 +75,14 @@
     return 'individual';
   }
 
+  function normalizeSponsorAmount(value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed < 85) {
+      return 85;
+    }
+    return Math.round(parsed * 100) / 100;
+  }
+
   function getSponsorMeta(data) {
     const sponsorType = normalizeSponsorType(data?.sponsor_type);
 
@@ -688,6 +696,7 @@
     const forName = form.elements.for_name ? form.elements.for_name.value.trim() : '';
     const fromName = form.elements.from_name ? form.elements.from_name.value.trim() : '';
     const email = form.elements.email.value.trim();
+    const amount = Number(form.elements.amount.value);
     const message = form.elements.message.value.trim();
 
     if (sponsorType === 'individual' && !name) {
@@ -710,7 +719,12 @@
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to sponsor KM ${km} for £85?`)) {
+    if (!Number.isFinite(amount) || amount < 85) {
+      showFormError('Please enter a sponsorship amount of at least £85.');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to sponsor KM ${km} for ${formatPounds(amount)}?`)) {
       return;
     }
 
@@ -730,6 +744,7 @@
           for_name: forName,
           from_name: fromName,
           email,
+          amount,
           message
         })
       });
@@ -745,7 +760,7 @@
           from_name: fromName,
           email,
           message,
-          primary_amount: 85,
+          primary_amount: amount,
           verified_amount: 0,
           status: 'pending',
           verificationCode: payload.verificationCode
@@ -782,7 +797,7 @@
     }
 
     const meta = getSponsorMeta(sponsorData);
-    const amount = 85;
+    const amount = normalizeSponsorAmount(sponsorData?.primary_amount);
     previewKm.textContent = `KM ${km}`;
     previewAmount.textContent = `${formatPounds(amount)}`;
     previewHeading.textContent = meta.heading;
@@ -874,6 +889,20 @@
           />
         </div>
         <div>
+          <label for="sponsorAmount" class="text-sm font-semibold text-deepGreen/80">Sponsorship amount (£)</label>
+          <input
+            id="sponsorAmount"
+            name="amount"
+            type="number"
+            required
+            min="85"
+            step="1"
+            class="mt-1.5 w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-dark outline-none transition focus:border-deepGreen focus:ring-2 focus:ring-deepGreen/10"
+            placeholder="£85 minimum"
+            value="85"
+          />
+        </div>
+        <div>
           <label for="sponsorMessage" class="text-sm font-semibold text-deepGreen/80">Message (optional)</label>
           <textarea
             id="sponsorMessage"
@@ -914,6 +943,7 @@
     const groupInput = document.getElementById('sponsorGroupName');
     const forInput = document.getElementById('sponsorForName');
     const fromInput = document.getElementById('sponsorFromName');
+    const amountInput = document.getElementById('sponsorAmount');
     const sponsorTypeInputs = form.querySelectorAll('input[name="sponsor_type"]');
     const individualFields = document.getElementById('individualFields');
     const groupFields = document.getElementById('groupFields');
@@ -933,7 +963,8 @@
         name: nameInput ? nameInput.value.trim() : '',
         group_name: groupInput ? groupInput.value.trim() : '',
         for_name: forInput ? forInput.value.trim() : '',
-        from_name: fromInput ? fromInput.value.trim() : ''
+        from_name: fromInput ? fromInput.value.trim() : '',
+        primary_amount: amountInput ? normalizeSponsorAmount(amountInput.value) : 85
       };
     };
 
@@ -957,6 +988,9 @@
     }
     if (fromInput) {
       fromInput.addEventListener('input', syncPreview);
+    }
+    if (amountInput) {
+      amountInput.addEventListener('input', syncPreview);
     }
     sponsorTypeInputs.forEach((input) => {
       input.addEventListener('change', updateSponsorTypeFields);

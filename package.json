@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/Himikid/berlin-marathon-fundraising#readme",
   "dependencies": {
-    "@upstash/redis": "^1.36.4"
+    "@upstash/redis": "^1.36.4",
+    "resend": "^6.9.3"
   }
 }
