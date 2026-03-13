@@ -19,6 +19,7 @@
   const modalContent = document.getElementById('modalContent');
   const justGivingUrl = 'https://www.justgiving.com/fundraising/ibrahimjaved-6994f535e1c202f790972e93';
   const liveContributionsByKm = new Map();
+  let initialKmHandled = false;
 
   function getKmStatus(km) {
     if (claimedKmData[km]) {
@@ -57,6 +58,13 @@
     }
 
     return formatPounds(normalized);
+  }
+
+  function getKmShareUrl(km) {
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set('km', String(km));
+    shareUrl.hash = 'kilometres';
+    return shareUrl.toString();
   }
 
   function escapeHtml(value) {
@@ -426,6 +434,41 @@
     return apiMessage || fallbackMessage;
   }
 
+  function buildSponsorShareText(km, sponsorData) {
+    const sponsorType = normalizeSponsorType(sponsorData?.sponsor_type);
+    const shareUrl = getKmShareUrl(km);
+
+    if (sponsorType === 'sadaqah_jariyah') {
+      const forName = sponsorData?.for_name || 'a loved one';
+      return `I just sponsored KM ${km} as Sadaqah Jariyah for ${forName} in support of Sudan. Please join in and contribute to this kilometre: ${shareUrl}`;
+    }
+
+    if (sponsorType === 'group') {
+      const groupName = sponsorData?.group_name || 'our group';
+      return `${groupName} just sponsored KM ${km} to support families in Sudan. Please join us and contribute to this kilometre: ${shareUrl}`;
+    }
+
+    const name = sponsorData?.name || 'I';
+    return `${name} just sponsored KM ${km} to support families in Sudan. Please join in and contribute to this kilometre: ${shareUrl}`;
+  }
+
+  async function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const temp = document.createElement('textarea');
+    temp.value = text;
+    temp.setAttribute('readonly', '');
+    temp.style.position = 'absolute';
+    temp.style.left = '-9999px';
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand('copy');
+    document.body.removeChild(temp);
+  }
+
   async function parseJsonResponse(response) {
     const raw = await response.text();
     if (!raw) {
@@ -531,7 +574,10 @@
     submitBtn.querySelector('.reserve-label').textContent = isLoading ? 'Reserving...' : 'Reserve KM';
   }
 
-  function renderConfirmation(km, verificationCode) {
+  function renderConfirmation(km, verificationCode, sponsorData) {
+    const shareText = buildSponsorShareText(km, sponsorData);
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+    const shareUrl = getKmShareUrl(km);
     modalTitle.textContent = `KM ${km} Donation Pending`;
     modalContent.innerHTML = `
       <p class="text-dark/80 leading-7">
@@ -552,7 +598,54 @@
       <p class="mt-4 text-sm leading-6 text-dark/70">
         Example message: "Sponsoring this KM - ${verificationCode.toUpperCase()}"
       </p>
+      <div class="mt-5 rounded-xl border border-deepGreen/12 bg-gray-50 p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/70">Share this kilometre</p>
+        <p class="mt-1 text-sm text-dark/75">Invite others to contribute to KM ${km}.</p>
+        <div class="mt-3 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            id="copyShareTextBtn"
+            class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/25 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+          >
+            Copy Share Text
+          </button>
+          <a
+            href="${whatsappUrl}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex w-full items-center justify-center rounded-full bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-95"
+          >
+            Share on WhatsApp
+          </a>
+        </div>
+        <a
+          href="${shareUrl}"
+          class="mt-2 inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+        >
+          Open Shared Tile Link
+        </a>
+        <p id="shareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
+      </div>
     `;
+
+    const copyBtn = document.getElementById('copyShareTextBtn');
+    const shareStatus = document.getElementById('shareStatus');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await copyToClipboard(shareText);
+          if (shareStatus) {
+            shareStatus.textContent = 'Share text copied.';
+            shareStatus.classList.remove('hidden');
+          }
+        } catch {
+          if (shareStatus) {
+            shareStatus.textContent = 'Unable to copy automatically. Please copy manually.';
+            shareStatus.classList.remove('hidden');
+          }
+        }
+      });
+    }
   }
 
   function setContributeLoading(isLoading) {
@@ -768,7 +861,12 @@
 
         updateTile(km);
         renderProgress();
-        renderConfirmation(km, payload.verificationCode);
+        renderConfirmation(km, payload.verificationCode, {
+          sponsor_type: sponsorType,
+          name,
+          group_name: groupName,
+          for_name: forName
+        });
         return;
       }
 
@@ -1059,7 +1157,30 @@
     }
   });
 
+  function handleInitialKmFromQuery() {
+    if (initialKmHandled) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const kmParam = Number(params.get('km'));
+    if (!Number.isInteger(kmParam) || kmParam < 1 || kmParam > totalKilometres) {
+      initialKmHandled = true;
+      return;
+    }
+
+    initialKmHandled = true;
+    const section = document.getElementById('kilometres');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    setTimeout(() => {
+      openTileDetailModal(kmParam);
+    }, 250);
+  }
+
   renderGrid();
   renderProgress();
-  hydrateFromApi();
+  hydrateFromApi().finally(handleInitialKmFromQuery);
 })();
