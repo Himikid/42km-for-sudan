@@ -220,7 +220,6 @@
     });
     const shareText = buildSponsorShareText(km, source);
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-    const shareUrl = getKmShareUrl(km);
     const sponsorType = meta.sponsorType;
     const summary = getContributionSummary(source, meta, km);
     const amount = Number(summary.verifiedTotal);
@@ -327,12 +326,6 @@
               Share on WhatsApp
             </a>
           </div>
-          <a
-            href="${shareUrl}"
-            class="mt-2 inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
-          >
-            Open Shared Tile Link
-          </a>
           <p id="tileShareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
         </div>
       </div>
@@ -628,7 +621,6 @@
   function renderConfirmation(km, verificationCode, sponsorData) {
     const shareText = buildSponsorShareText(km, sponsorData);
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-    const shareUrl = getKmShareUrl(km);
     modalTitle.textContent = `KM ${km} Donation Pending`;
     modalContent.innerHTML = `
       <p class="text-dark/80 leading-7">
@@ -669,12 +661,6 @@
             Share on WhatsApp
           </a>
         </div>
-        <a
-          href="${shareUrl}"
-          class="mt-2 inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
-        >
-          Open Shared Tile Link
-        </a>
         <p id="shareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
       </div>
     `;
