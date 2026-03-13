@@ -125,6 +125,8 @@ async function sendContributionEmail({ email, name, km, contributionCode }) {
     "Here is a quick update on the situation in Sudan and why this fundraiser matters:",
     "https://www.youtube.com/watch?v=12OcaORLnTc",
     "",
+    "If you have any questions, feel free to contact me at Ibrahim@andalus.co.uk.",
+    "",
     "Thank you again for your support",
     "",
     "Warm regards,",
@@ -147,6 +149,7 @@ async function sendContributionEmail({ email, name, km, contributionCode }) {
       <p style="margin:0 0 14px;">When donating, please include your contribution code in the donation message so I can match your contribution.</p>
       <p style="margin:0 0 8px;">Here is a quick update on the situation in Sudan and why this fundraiser matters:</p>
       <p style="margin:0 0 18px;"><a href="https://www.youtube.com/watch?v=12OcaORLnTc" style="color:#0F3D2E;font-weight:600;">Watch: Sudan Crisis Update</a></p>
+      <p style="margin:0 0 12px;">If you have any questions, feel free to contact me at <a href="mailto:Ibrahim@andalus.co.uk" style="color:#0F3D2E;font-weight:600;">Ibrahim@andalus.co.uk</a>.</p>
       <p style="margin:0;">Thank you again for your support</p>
       <p style="margin:10px 0 0;">Warm regards,<br />Ibrahim</p>
     </div>
