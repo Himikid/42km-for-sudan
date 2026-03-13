@@ -326,12 +326,20 @@
               Share on WhatsApp
             </a>
           </div>
+          <button
+            type="button"
+            id="shareTileImageBtn"
+            class="mt-2 inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+          >
+            Share Tile Image
+          </button>
           <p id="tileShareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
         </div>
       </div>
     `;
 
     const copyBtn = document.getElementById('copyTileShareBtn');
+    const shareImageBtn = document.getElementById('shareTileImageBtn');
     const shareStatus = document.getElementById('tileShareStatus');
     if (copyBtn) {
       copyBtn.addEventListener('click', async () => {
@@ -344,6 +352,29 @@
         } catch {
           if (shareStatus) {
             shareStatus.textContent = 'Unable to copy automatically. Please copy manually.';
+            shareStatus.classList.remove('hidden');
+          }
+        }
+      });
+    }
+    if (shareImageBtn) {
+      shareImageBtn.addEventListener('click', async () => {
+        try {
+          const mode = await shareTileImage({
+            km,
+            sponsorData: source,
+            statusLabel: status === 'claimed' ? 'Donation Confirmed' : 'Donation Pending',
+            shareText
+          });
+          if (shareStatus) {
+            shareStatus.textContent = mode === 'shared'
+              ? 'Tile image shared.'
+              : 'Tile image downloaded. Attach it in WhatsApp.';
+            shareStatus.classList.remove('hidden');
+          }
+        } catch {
+          if (shareStatus) {
+            shareStatus.textContent = 'Unable to generate share image right now.';
             shareStatus.classList.remove('hidden');
           }
         }
@@ -513,6 +544,123 @@
     document.body.removeChild(temp);
   }
 
+  function drawRoundedRect(ctx, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  async function createTileShareImageBlob(km, sponsorData, statusLabel) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1350;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Unable to create image canvas');
+    }
+
+    const meta = getSponsorMeta(sponsorData || {});
+    const sponsorType = normalizeSponsorType(sponsorData?.sponsor_type);
+    const sponsorHeading = sponsorType === 'sadaqah_jariyah' ? 'Sadaqah Jariyah' : meta.heading;
+    const sponsorName = meta.nameLine || 'Sponsor';
+    const amount = Number(sponsorData?.verified_amount) > 0
+      ? formatPounds(sponsorData.verified_amount)
+      : Number(sponsorData?.primary_amount) > 0
+        ? `Pledged ${formatPounds(sponsorData.primary_amount)}`
+        : '';
+
+    ctx.fillStyle = '#F8F5EF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    grad.addColorStop(0, '#0F3D2E');
+    grad.addColorStop(1, '#14553F');
+    drawRoundedRect(ctx, 90, 120, 900, 1110, 44);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = '700 40px Inter, Arial, sans-serif';
+    ctx.fillText('42km for Sudan', 150, 210);
+
+    ctx.fillStyle = '#F8F5EF';
+    ctx.font = '700 132px Inter, Arial, sans-serif';
+    ctx.fillText(`KM ${km}`, 150, 370);
+
+    ctx.font = '600 44px Inter, Arial, sans-serif';
+    ctx.fillText(sponsorHeading, 150, 460);
+
+    ctx.font = '700 62px Inter, Arial, sans-serif';
+    const namePrefix = sponsorType === 'sadaqah_jariyah' ? 'for ' : '';
+    ctx.fillText(`${namePrefix}${sponsorName}`, 150, 545);
+
+    if (sponsorType === 'sadaqah_jariyah' && sponsorData?.from_name) {
+      ctx.fillStyle = '#F2E9CC';
+      ctx.font = '500 34px Inter, Arial, sans-serif';
+      ctx.fillText(`From ${sponsorData.from_name}`, 150, 602);
+      ctx.fillStyle = '#F8F5EF';
+    }
+
+    if (amount) {
+      ctx.font = '600 46px Inter, Arial, sans-serif';
+      ctx.fillText(amount, 150, 700);
+    }
+
+    drawRoundedRect(ctx, 150, 760, 420, 84, 999);
+    ctx.fillStyle = '#D4AF37';
+    ctx.fill();
+    ctx.fillStyle = '#1F1F1F';
+    ctx.font = '700 28px Inter, Arial, sans-serif';
+    ctx.fillText(statusLabel, 188, 815);
+
+    ctx.fillStyle = '#F8F5EF';
+    ctx.font = '500 36px Inter, Arial, sans-serif';
+    ctx.fillText('Join this kilometre and contribute today.', 150, 920);
+
+    ctx.fillStyle = '#E9DFC4';
+    ctx.font = '500 28px Inter, Arial, sans-serif';
+    ctx.fillText(window.location.host || '42kmforsudan.com', 150, 1110);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) {
+      throw new Error('Unable to export image');
+    }
+    return blob;
+  }
+
+  async function shareTileImage({ km, sponsorData, statusLabel, shareText }) {
+    const blob = await createTileShareImageBlob(km, sponsorData, statusLabel);
+    const file = new File([blob], `km-${km}-42km-for-sudan.png`, { type: 'image/png' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: `KM ${km} • 42km for Sudan`,
+        text: shareText,
+        files: [file]
+      });
+      return 'shared';
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `km-${km}-42km-for-sudan.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    return 'downloaded';
+  }
+
   async function parseJsonResponse(response) {
     const raw = await response.text();
     if (!raw) {
@@ -661,11 +809,19 @@
             Share on WhatsApp
           </a>
         </div>
+        <button
+          type="button"
+          id="shareConfirmTileImageBtn"
+          class="mt-2 inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+        >
+          Share Tile Image
+        </button>
         <p id="shareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
       </div>
     `;
 
     const copyBtn = document.getElementById('copyShareTextBtn');
+    const shareImageBtn = document.getElementById('shareConfirmTileImageBtn');
     const shareStatus = document.getElementById('shareStatus');
     if (copyBtn) {
       copyBtn.addEventListener('click', async () => {
@@ -678,6 +834,29 @@
         } catch {
           if (shareStatus) {
             shareStatus.textContent = 'Unable to copy automatically. Please copy manually.';
+            shareStatus.classList.remove('hidden');
+          }
+        }
+      });
+    }
+    if (shareImageBtn) {
+      shareImageBtn.addEventListener('click', async () => {
+        try {
+          const mode = await shareTileImage({
+            km,
+            sponsorData,
+            statusLabel: 'Donation Pending',
+            shareText
+          });
+          if (shareStatus) {
+            shareStatus.textContent = mode === 'shared'
+              ? 'Tile image shared.'
+              : 'Tile image downloaded. Attach it in WhatsApp.';
+            shareStatus.classList.remove('hidden');
+          }
+        } catch {
+          if (shareStatus) {
+            shareStatus.textContent = 'Unable to generate share image right now.';
             shareStatus.classList.remove('hidden');
           }
         }
