@@ -16,7 +16,7 @@ A simple but powerful 42km sponsorship app: people reserve a KM, get a code by e
 - Data is stored in Upstash Redis with anti-collision locks so two people cannot claim the same KM at the same time.
 - Admin dashboard verifies donations, confirms contributors, and can safely unreserve/archive KMs.
 
-## Architecture (Front and Centre)
+## Architecture
 
 ```mermaid
 flowchart TD
