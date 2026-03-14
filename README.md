@@ -11,7 +11,7 @@ A simple but powerful 42km sponsorship app: people reserve a KM, get a code by e
 
 </div>
 
-## TL;DR (for people coming from LinkedIn)
+## Quick Summary
 - Pick a kilometre (1-42), reserve it, and get a verification code by email.
 - Data is stored in Upstash Redis with anti-collision locks so two people cannot claim the same KM at the same time.
 - Admin dashboard verifies donations, confirms contributors, and can safely unreserve/archive KMs.
@@ -20,9 +20,14 @@ A simple but powerful 42km sponsorship app: people reserve a KM, get a code by e
 
 ```mermaid
 flowchart TD
+    U["Supporter in browser"] -->|"Load grid data"| G["GET /api/sponsor"]
     U["Supporter in browser"] -->|"Reserve KM"| A["POST /api/sponsor"]
     U -->|"Contribute to reserved KM"| B["POST /api/contribute"]
     AD["Admin in browser"] -->|"Moderate + verify"| C["GET/PATCH /api/admin"]
+
+    G --> R["Upstash Redis"]
+    R --> G
+    G -->|"sponsors + contributors JSON"| U
 
     A --> R["Upstash Redis"]
     B --> R
@@ -34,8 +39,8 @@ flowchart TD
     E --> M["Confirmation email with code"]
 ```
 
-## ELI5: How it works
-1. A user clicks a KM and submits a form.
+## How it works
+1. The frontend loads current sponsor/contributor data through `GET /api/sponsor` (which reads from Redis).
 2. API checks input, rate limits, and puts a short lock on that KM in Redis.
 3. If KM is free, it saves sponsor/contributor data and generates a code.
 4. API sends a confirmation email through Resend.
@@ -140,14 +145,16 @@ Open:
 
 ```text
 .
-├── index.html
-├── script.js
-├── admin.html
-├── admin.js
 ├── api/
 │   ├── sponsor.js
 │   ├── contribute.js
 │   └── admin.js
+├── public/
+│   ├── index.html
+│   ├── script.js
+│   ├── admin.html
+│   ├── admin.js
+│   └── style.css
 └── lib/
     └── redis.js
 ```
