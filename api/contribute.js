@@ -117,12 +117,12 @@ async function sendContributionEmail({ email, name, km, contributionCode }) {
     `Kilometre: KM ${km}`,
     `Contribution Code: ${contributionCode.toUpperCase()}`,
     "",
-    "To complete your contribution, please donate here:",
+    "To complete your contribution, donate on JustGiving:",
     JUSTGIVING_URL,
     "",
     "When donating, please include your contribution code in the donation message so I can match your contribution.",
     "",
-    "Here is a quick update on the situation in Sudan and why this fundraiser matters:",
+    "To find out more about the situation in Sudan:",
     "https://www.youtube.com/watch?v=12OcaORLnTc",
     "",
     "If you have any questions, feel free to contact me at Ibrahim@andalus.co.uk.",
@@ -144,11 +144,13 @@ async function sendContributionEmail({ email, name, km, contributionCode }) {
       <div style="display:inline-block;border:1px solid #d9d9d9;background:#f8f5ef;padding:10px 14px;border-radius:10px;font-family:ui-monospace,Menlo,monospace;font-size:20px;letter-spacing:1px;font-weight:700;color:#0F3D2E;">
         ${safeCode}
       </div>
-      <p style="margin:18px 0 10px;">To complete your contribution, please donate here:</p>
-      <p style="margin:0 0 18px;"><a href="${JUSTGIVING_URL}" style="color:#0F3D2E;font-weight:600;">Donate on JustGiving</a></p>
+      <p style="margin:18px 0 10px;">To complete your contribution, donate on JustGiving:</p>
+      <p style="margin:0 0 8px;"><a href="${JUSTGIVING_URL}" style="color:#0F3D2E;font-weight:600;">Donate on JustGiving</a></p>
+      <p style="margin:0 0 18px;word-break:break-all;"><a href="${JUSTGIVING_URL}" style="color:#0F3D2E;">${JUSTGIVING_URL}</a></p>
       <p style="margin:0 0 14px;">When donating, please include your contribution code in the donation message so I can match your contribution.</p>
-      <p style="margin:0 0 8px;">Here is a quick update on the situation in Sudan and why this fundraiser matters:</p>
-      <p style="margin:0 0 18px;"><a href="https://www.youtube.com/watch?v=12OcaORLnTc" style="color:#0F3D2E;font-weight:600;">Watch: Sudan Crisis Update</a></p>
+      <p style="margin:0 0 8px;">To find out more about the situation in Sudan:</p>
+      <p style="margin:0 0 8px;"><a href="https://www.youtube.com/watch?v=12OcaORLnTc" style="color:#0F3D2E;font-weight:600;">Watch: Sudan Crisis Update</a></p>
+      <p style="margin:0 0 18px;word-break:break-all;"><a href="https://www.youtube.com/watch?v=12OcaORLnTc" style="color:#0F3D2E;">https://www.youtube.com/watch?v=12OcaORLnTc</a></p>
       <p style="margin:0 0 12px;">If you have any questions, feel free to contact me at <a href="mailto:Ibrahim@andalus.co.uk" style="color:#0F3D2E;font-weight:600;">Ibrahim@andalus.co.uk</a>.</p>
       <p style="margin:0;">Thank you again for your support</p>
       <p style="margin:10px 0 0;">Warm regards,<br />Ibrahim</p>
