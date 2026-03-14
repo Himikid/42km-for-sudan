@@ -82,7 +82,7 @@ The sender is hardcoded as:
 
 Your Resend account/domain must be configured to allow this sender.
 
-## Run locally (copy/paste)
+## Run locally
 
 ### 1. Prerequisites
 - Node.js 18+
