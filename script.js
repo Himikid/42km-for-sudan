@@ -85,8 +85,8 @@
 
   function normalizeSponsorAmount(value) {
     const parsed = Number(value);
-    if (!Number.isFinite(parsed) || parsed < 85) {
-      return 85;
+    if (!Number.isFinite(parsed)) {
+      return null;
     }
     return Math.round(parsed * 100) / 100;
   }
@@ -757,100 +757,126 @@
     submitBtn.querySelector('.reserve-label').textContent = isLoading ? 'Reserving...' : 'Reserve KM';
   }
 
-  function renderConfirmation(km, verificationCode, sponsorData) {
-    const shareText = buildSponsorShareText(km, sponsorData);
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-    modalTitle.textContent = `KM ${km} Donation Pending`;
-    modalContent.innerHTML = `
-      <p class="text-dark/80 leading-7">
-        Please complete your sponsorship by donating on JustGiving. <strong>Copy</strong> and include your verification code in the donation message.
-      </p>
-      <div class="mt-5 rounded-xl border border-deepGreen/20 bg-cream px-4 py-4">
-        <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/80">Verification Code</p>
-        <p class="mt-2 font-mono text-2xl font-semibold tracking-widest text-deepGreen">${verificationCode.toUpperCase()}</p>
-      </div>
-      <a
-        href="${justGivingUrl}"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-deepGreen px-6 py-3 text-base font-semibold text-cream transition hover:bg-[#0b3024]"
-      >
-        Donate on JustGiving
-      </a>
-      <p class="mt-4 text-sm leading-6 text-dark/70">
-        Example message: "Sponsoring this KM - ${verificationCode.toUpperCase()}"
-      </p>
-      <details class="mt-5 rounded-xl border border-deepGreen/12 bg-gray-50 p-4">
-        <summary class="cursor-pointer list-none text-sm font-semibold text-deepGreen">
-          Share options
-        </summary>
-        <div class="mt-3 space-y-2">
+  function renderConfirmation(km, verificationCode, pledgeAmount) {
+    const formattedCode = verificationCode.toUpperCase();
+    const normalizedPledgeAmount = Number(pledgeAmount);
+    const hasPledgeAmount = Number.isFinite(normalizedPledgeAmount) && normalizedPledgeAmount >= 85;
+
+    const renderDonationStep = () => {
+      modalTitle.textContent = `KM ${km} Donation`;
+      modalContent.innerHTML = `
+        <div class="space-y-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/70">Step 3 of 3</p>
+          <p class="text-dark/80 leading-7">
+            Donate on JustGiving and make sure you <strong>include this code in your donation message</strong>:
+          </p>
+          <div class="rounded-xl border border-deepGreen/20 bg-cream px-4 py-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/80">Donation Code</p>
+            <p class="mt-2 font-mono text-2xl font-semibold tracking-widest text-deepGreen">${formattedCode}</p>
+          </div>
+          ${hasPledgeAmount ? `
+          <p class="text-sm leading-6 text-dark/75">
+            <strong>Pledge amount:</strong> ${formatPounds(normalizedPledgeAmount)}
+          </p>
+          ` : ''}
+          <p class="text-sm leading-6 text-dark/70">
+            Reminder: set JustGiving tip to £0.
+          </p>
           <button
             type="button"
-            id="confirmWhatsappShareBtn"
-            class="inline-flex w-full items-center justify-center rounded-full bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-95"
+            id="openJustGivingNowBtn"
+            class="inline-flex w-full items-center justify-center rounded-full bg-deepGreen px-6 py-3 text-base font-semibold text-cream transition hover:bg-[#0b3024]"
           >
-            Share on WhatsApp
+            Open JustGiving
           </button>
           <button
             type="button"
-            id="copyShareTextBtn"
-            class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/25 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
+            id="donationDoneBtn"
+            class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/25 bg-white px-6 py-3 text-sm font-semibold text-deepGreen transition hover:bg-cream sm:text-base"
           >
-            Copy Share Text (Text)
+            I've Donated
           </button>
-          <button
-            type="button"
-            id="downloadConfirmTileImageBtn"
-            class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/20 bg-white px-4 py-2.5 text-sm font-semibold text-deepGreen transition hover:bg-cream"
-          >
-            Download Tile Image
-          </button>
+          <p class="text-xs text-dark/60">
+            Step 3: tap "I've Donated" and we will verify your donation shortly.
+          </p>
         </div>
-        <p id="shareStatus" class="mt-2 hidden text-xs font-medium text-deepGreen"></p>
-      </details>
+      `;
+
+      const openBtn = document.getElementById('openJustGivingNowBtn');
+      const doneBtn = document.getElementById('donationDoneBtn');
+
+      if (openBtn) {
+        openBtn.addEventListener('click', () => {
+          window.open(justGivingUrl, '_blank', 'noopener,noreferrer');
+        });
+      }
+
+      if (doneBtn) {
+        doneBtn.addEventListener('click', () => {
+          closeModal();
+        });
+      }
+    };
+
+    modalTitle.textContent = `KM ${km} Reserved`;
+    modalContent.innerHTML = `
+      <div class="space-y-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/70">Step 2 of 3</p>
+        <p class="text-dark/90 font-medium">Thank you for sponsoring KM ${km}.</p>
+        <p class="text-dark/80 leading-7">
+          Please <strong>copy</strong> this code.
+        </p>
+        <div class="rounded-xl border border-deepGreen/20 bg-cream px-4 py-4 text-center">
+          <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/80">Donation Code</p>
+          <p class="mt-2 font-mono text-3xl font-semibold tracking-widest text-deepGreen">${formattedCode}</p>
+        </div>
+        <p id="donationCodeStatus" class="hidden text-xs font-medium text-deepGreen"></p>
+        <button
+          type="button"
+          id="copyDonationCodeBtn"
+          class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/25 bg-white px-6 py-3 text-sm font-semibold text-deepGreen transition hover:bg-cream sm:text-base"
+        >
+          Copy Code
+        </button>
+        <button
+          type="button"
+          id="continueToDonateBtn"
+          class="inline-flex w-full items-center justify-center rounded-full bg-deepGreen px-6 py-3 text-base font-semibold text-cream transition hover:bg-[#0b3024]"
+        >
+          Next
+        </button>
+      </div>
     `;
 
-    const copyBtn = document.getElementById('copyShareTextBtn');
-    const whatsappBtn = document.getElementById('confirmWhatsappShareBtn');
-    const downloadImageBtn = document.getElementById('downloadConfirmTileImageBtn');
-    const shareStatus = document.getElementById('shareStatus');
-    if (copyBtn) {
-      copyBtn.addEventListener('click', async () => {
+    const copyCodeBtn = document.getElementById('copyDonationCodeBtn');
+    const continueBtn = document.getElementById('continueToDonateBtn');
+    const codeStatus = document.getElementById('donationCodeStatus');
+
+    if (copyCodeBtn) {
+      copyCodeBtn.addEventListener('click', async () => {
         try {
-          await copyToClipboard(shareText);
-          if (shareStatus) {
-            shareStatus.textContent = 'Share text copied.';
-            shareStatus.classList.remove('hidden');
+          await copyToClipboard(formattedCode);
+          if (codeStatus) {
+            codeStatus.textContent = 'Donation code copied.';
+            codeStatus.classList.remove('hidden');
           }
         } catch {
-          if (shareStatus) {
-            shareStatus.textContent = 'Unable to copy automatically. Please copy manually.';
-            shareStatus.classList.remove('hidden');
+          if (codeStatus) {
+            codeStatus.textContent = 'Unable to copy automatically. Please copy manually.';
+            codeStatus.classList.remove('hidden');
           }
         }
       });
     }
-    if (downloadImageBtn) {
-      downloadImageBtn.addEventListener('click', async () => {
+
+    if (continueBtn) {
+      continueBtn.addEventListener('click', async () => {
         try {
-          const blob = await createTileShareImageBlob(km, sponsorData, 'Donation Pending');
-          downloadBlob(blob, `km-${km}-42km-for-sudan.png`);
-          if (shareStatus) {
-            shareStatus.textContent = 'Tile image downloaded.';
-            shareStatus.classList.remove('hidden');
-          }
+          await copyToClipboard(formattedCode);
         } catch {
-          if (shareStatus) {
-            shareStatus.textContent = 'Unable to download tile image right now.';
-            shareStatus.classList.remove('hidden');
-          }
+          // Continue even if clipboard permission is blocked.
         }
-      });
-    }
-    if (whatsappBtn) {
-      whatsappBtn.addEventListener('click', () => {
-        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+        renderDonationStep();
       });
     }
   }
@@ -1068,12 +1094,7 @@
 
         updateTile(km);
         renderProgress();
-        renderConfirmation(km, payload.verificationCode, {
-          sponsor_type: sponsorType,
-          name,
-          group_name: groupName,
-          for_name: forName
-        });
+        renderConfirmation(km, payload.verificationCode, amount);
         return;
       }
 
@@ -1104,7 +1125,7 @@
     const meta = getSponsorMeta(sponsorData);
     const amount = normalizeSponsorAmount(sponsorData?.primary_amount);
     previewKm.textContent = `KM ${km}`;
-    previewAmount.textContent = `${formatPounds(amount)}`;
+    previewAmount.textContent = amount === null ? 'Minimum £85' : formatPounds(amount);
     previewHeading.textContent = meta.heading;
     previewName.textContent = meta.nameLine;
 
@@ -1195,6 +1216,7 @@
         </div>
         <div>
           <label for="sponsorAmount" class="text-sm font-semibold text-deepGreen/80">Sponsorship amount (£)</label>
+          <p class="mt-1 text-xs text-dark/65">Minimum £85 per KM.</p>
           <input
             id="sponsorAmount"
             name="amount"
@@ -1203,8 +1225,7 @@
             min="85"
             step="1"
             class="mt-1.5 w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-dark outline-none transition focus:border-deepGreen focus:ring-2 focus:ring-deepGreen/10"
-            placeholder="£85 minimum"
-            value="85"
+            placeholder="Enter amount (minimum £85)"
           />
         </div>
         <div>
@@ -1217,6 +1238,30 @@
             class="mt-1.5 w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-dark outline-none transition focus:border-deepGreen focus:ring-2 focus:ring-deepGreen/10"
             placeholder="Add a short dedication or note"
           ></textarea>
+          <p class="mt-2 text-xs italic text-dark/60">(presets)</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              data-message-preset="good_luck"
+              class="rounded-full border border-deepGreen/20 bg-white px-3 py-1.5 text-xs font-semibold text-deepGreen transition hover:bg-cream"
+            >
+              Good luck
+            </button>
+            <button
+              type="button"
+              data-message-preset="support"
+              class="rounded-full border border-deepGreen/20 bg-white px-3 py-1.5 text-xs font-semibold text-deepGreen transition hover:bg-cream"
+            >
+              Proud to support
+            </button>
+            <button
+              type="button"
+              data-message-preset="inspiring"
+              class="rounded-full border border-deepGreen/20 bg-white px-3 py-1.5 text-xs font-semibold text-deepGreen transition hover:bg-cream"
+            >
+              Inspiring effort
+            </button>
+          </div>
         </div>
         <div class="rounded-xl border border-deepGreen/10 bg-gray-50 p-3">
           <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/70">Live Tile Preview</p>
@@ -1249,6 +1294,7 @@
     const forInput = document.getElementById('sponsorForName');
     const fromInput = document.getElementById('sponsorFromName');
     const amountInput = document.getElementById('sponsorAmount');
+    const messageInput = document.getElementById('sponsorMessage');
     const sponsorTypeInputs = form.querySelectorAll('input[name="sponsor_type"]');
     const individualFields = document.getElementById('individualFields');
     const groupFields = document.getElementById('groupFields');
@@ -1269,7 +1315,7 @@
         group_name: groupInput ? groupInput.value.trim() : '',
         for_name: forInput ? forInput.value.trim() : '',
         from_name: fromInput ? fromInput.value.trim() : '',
-        primary_amount: amountInput ? normalizeSponsorAmount(amountInput.value) : 85
+        primary_amount: amountInput ? normalizeSponsorAmount(amountInput.value) : null
       };
     };
 
@@ -1284,6 +1330,33 @@
     };
 
     const syncPreview = () => renderSponsorPreview(km, readSponsorData());
+    const getPresetSenderName = () => {
+      const sponsorTypeInput = form.querySelector('input[name="sponsor_type"]:checked');
+      const sponsorType = normalizeSponsorType(sponsorTypeInput ? sponsorTypeInput.value : 'individual');
+
+      if (sponsorType === 'group') {
+        return (groupInput && groupInput.value.trim()) || 'a supporter group';
+      }
+
+      if (sponsorType === 'sadaqah_jariyah') {
+        return (fromInput && fromInput.value.trim()) || 'a supporter';
+      }
+
+      return (nameInput && nameInput.value.trim()) || 'a supporter';
+    };
+
+    const buildPresetMessage = (preset) => {
+      if (preset === 'good_luck') {
+        return `Good luck from ${getPresetSenderName()}`;
+      }
+      if (preset === 'support') {
+        return 'Proud to sponsor a KM for Sudan';
+      }
+      if (preset === 'inspiring') {
+        return 'Inspiring effort for a great cause.';
+      }
+      return '';
+    };
     nameInput.addEventListener('input', syncPreview);
     if (groupInput) {
       groupInput.addEventListener('input', syncPreview);
@@ -1299,6 +1372,19 @@
     }
     sponsorTypeInputs.forEach((input) => {
       input.addEventListener('change', updateSponsorTypeFields);
+    });
+    form.querySelectorAll('[data-message-preset]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!messageInput) {
+          return;
+        }
+        const presetKey = button.dataset.messagePreset;
+        const presetMessage = buildPresetMessage(presetKey);
+        if (!presetMessage) {
+          return;
+        }
+        messageInput.value = presetMessage;
+      });
     });
     updateSponsorTypeFields();
     syncPreview();
