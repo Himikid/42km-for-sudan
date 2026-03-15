@@ -563,6 +563,39 @@
     ctx.closePath();
   }
 
+  function wrapTextLines(ctx, text, maxWidth, maxLines) {
+    const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      return [];
+    }
+
+    const lines = [];
+    let current = words[0];
+
+    for (let i = 1; i < words.length; i += 1) {
+      const next = `${current} ${words[i]}`;
+      if (ctx.measureText(next).width <= maxWidth) {
+        current = next;
+      } else {
+        lines.push(current);
+        current = words[i];
+      }
+    }
+    lines.push(current);
+
+    if (lines.length <= maxLines) {
+      return lines;
+    }
+
+    const trimmed = lines.slice(0, maxLines);
+    let last = trimmed[maxLines - 1];
+    while (last.length > 0 && ctx.measureText(`${last}…`).width > maxWidth) {
+      last = last.slice(0, -1).trimEnd();
+    }
+    trimmed[maxLines - 1] = `${last}…`;
+    return trimmed;
+  }
+
   async function createTileShareImageBlob(km, sponsorData, statusLabel) {
     const canvas = document.createElement('canvas');
     canvas.width = 1080;
@@ -581,6 +614,7 @@
       : Number(sponsorData?.primary_amount) > 0
         ? `Pledged ${formatPounds(sponsorData.primary_amount)}`
         : '';
+    const sponsorMessage = String(sponsorData?.message || '').trim();
 
     ctx.fillStyle = '#F8F5EF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -626,13 +660,27 @@
     ctx.font = '700 28px Inter, Arial, sans-serif';
     ctx.fillText(statusLabel, 188, 815);
 
+    let ctaY = 920;
+    let hostY = 1110;
+    if (sponsorMessage) {
+      ctx.fillStyle = '#F8F5EF';
+      ctx.font = '500 34px Inter, Arial, sans-serif';
+      const messageLines = wrapTextLines(ctx, `"${sponsorMessage}"`, 780, 2);
+      messageLines.forEach((line, index) => {
+        ctx.fillText(line, 150, 910 + (index * 42));
+      });
+
+      ctaY = 1045;
+      hostY = 1185;
+    }
+
     ctx.fillStyle = '#F8F5EF';
     ctx.font = '500 36px Inter, Arial, sans-serif';
-    ctx.fillText('Join this kilometre and contribute today.', 150, 920);
+    ctx.fillText('Join this kilometre and contribute today.', 150, ctaY);
 
     ctx.fillStyle = '#E9DFC4';
     ctx.font = '500 28px Inter, Arial, sans-serif';
-    ctx.fillText(window.location.host || '42kmforsudan.com', 150, 1110);
+    ctx.fillText(window.location.host || '42kmforsudan.com', 150, hostY);
 
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
     if (!blob) {
