@@ -37,14 +37,7 @@ function parseStoredRecord(value) {
 }
 
 function generateVerificationCode(km) {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let suffix = "";
-
-  for (let i = 0; i < 4; i++) {
-    suffix += chars[Math.floor(Math.random() * chars.length)];
-  }
-
-  return `KM${km}-${suffix}`;
+  return `KM ${km}`;
 }
 
 function isValidEmail(email) {
@@ -121,7 +114,6 @@ async function sendReservationEmail({ email, km, verificationCode, displayName }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   const safeDisplayName = sanitizeText(displayName, NAME_MAX) || "there";
-  const safeCode = escapeHtml(verificationCode).toUpperCase();
   const safeKm = escapeHtml(km);
 
   const subject = "Your KM Reservation – 42km for Sudan";
@@ -132,12 +124,12 @@ async function sendReservationEmail({ email, km, verificationCode, displayName }
     "",
     "You have reserved:",
     `Kilometre: KM ${km}`,
-    `Verification Code: ${verificationCode.toUpperCase()}`,
+    `Sponsored KM: KM ${km}`,
     "",
     "To complete your sponsorship, donate on JustGiving:",
     JUSTGIVING_URL,
     "",
-    "When donating, please include your verification code in the donation message so I can match your contribution to your kilometre.",
+    "When donating, please include your sponsored KM (for example: KM 9) in the donation message so I can match your contribution.",
     "",
     "To find out more about the situation in Sudan:",
     "https://www.youtube.com/watch?v=12OcaORLnTc",
@@ -157,14 +149,14 @@ async function sendReservationEmail({ email, km, verificationCode, displayName }
       <p style="margin:0 0 12px;">Thank you so much for sponsoring a kilometre of <strong>42km for Sudan</strong>. Your support genuinely means a lot.</p>
       <p style="margin:0 0 6px;">You have reserved:</p>
       <p style="margin:0 0 6px;"><strong>Kilometre:</strong> KM ${safeKm}</p>
-      <p style="margin:0 0 18px;"><strong>Verification Code:</strong></p>
+      <p style="margin:0 0 18px;"><strong>Sponsored KM:</strong></p>
       <div style="display:inline-block;border:1px solid #d9d9d9;background:#f8f5ef;padding:10px 14px;border-radius:10px;font-family:ui-monospace,Menlo,monospace;font-size:20px;letter-spacing:1px;font-weight:700;color:#0F3D2E;">
-        ${safeCode}
+        KM ${safeKm}
       </div>
       <p style="margin:18px 0 10px;">To complete your sponsorship, donate on JustGiving:</p>
       <p style="margin:0 0 8px;"><a href="${JUSTGIVING_URL}" style="color:#0F3D2E;font-weight:600;">Donate on JustGiving</a></p>
       <p style="margin:0 0 18px;word-break:break-all;"><a href="${JUSTGIVING_URL}" style="color:#0F3D2E;">${JUSTGIVING_URL}</a></p>
-      <p style="margin:0 0 14px;">When donating, please include your verification code in the donation message so I can match your contribution to your kilometre.</p>
+      <p style="margin:0 0 14px;">When donating, please include your sponsored KM (for example: KM 9) in the donation message so I can match your contribution.</p>
       <p style="margin:0 0 8px;">To find out more about the situation in Sudan:</p>
       <p style="margin:0 0 8px;"><a href="https://www.youtube.com/watch?v=12OcaORLnTc" style="color:#0F3D2E;font-weight:600;">Watch: Sudan Crisis Update</a></p>
       <p style="margin:0 0 18px;word-break:break-all;"><a href="https://www.youtube.com/watch?v=12OcaORLnTc" style="color:#0F3D2E;">https://www.youtube.com/watch?v=12OcaORLnTc</a></p>
@@ -321,10 +313,7 @@ export default async function handler(req, res) {
       return res.status(409).json({ error: "This KM is currently reserved." });
     }
 
-    let verificationCode;
-    do {
-      verificationCode = generateVerificationCode(parsedKm);
-    } while (await redis.hexists(CODES_KEY, verificationCode));
+    const verificationCode = generateVerificationCode(parsedKm);
 
     const newRecord = {
       verificationCode,

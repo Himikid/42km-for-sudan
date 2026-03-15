@@ -805,8 +805,8 @@
     submitBtn.querySelector('.reserve-label').textContent = isLoading ? 'Reserving...' : 'Reserve KM';
   }
 
-  function renderConfirmation(km, verificationCode, pledgeAmount) {
-    const formattedCode = verificationCode.toUpperCase();
+  function renderConfirmation(km, pledgeAmount) {
+    const sponsoredKmLabel = `KM ${km}`;
     const normalizedPledgeAmount = Number(pledgeAmount);
     const hasPledgeAmount = Number.isFinite(normalizedPledgeAmount) && normalizedPledgeAmount >= 85;
 
@@ -814,14 +814,16 @@
       modalTitle.textContent = `KM ${km} Donation`;
       modalContent.innerHTML = `
         <div class="space-y-4">
-          <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/70">Step 3 of 3</p>
           <p class="text-dark/80 leading-7">
-            Donate on JustGiving and make sure you <strong>include this code in your donation message</strong>:
+            Donate on JustGiving and include your sponsored KM in your donation message.
           </p>
-          <div class="rounded-xl border border-deepGreen/20 bg-cream px-4 py-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/80">Donation Code</p>
-            <p class="mt-2 font-mono text-2xl font-semibold tracking-widest text-deepGreen">${formattedCode}</p>
+          <div class="rounded-xl border border-gold/50 bg-[#2E6F5A] px-4 py-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-cream/90">Message example</p>
+            <p class="mt-2 font-mono text-2xl font-extrabold tracking-wide text-cream">${sponsoredKmLabel} Good luck on your run!</p>
           </div>
+          <p class="text-sm leading-6 text-dark/80">
+            Ensure to put <strong>'${sponsoredKmLabel}'</strong> in your JG message.
+          </p>
           ${hasPledgeAmount ? `
           <p class="text-sm leading-6 text-dark/75">
             <strong>Pledge amount:</strong> ${formatPounds(normalizedPledgeAmount)}
@@ -865,68 +867,7 @@
         });
       }
     };
-
-    modalTitle.textContent = `KM ${km} Reserved`;
-    modalContent.innerHTML = `
-      <div class="space-y-4">
-        <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/70">Step 2 of 3</p>
-        <p class="text-dark/90 font-medium">Thank you for sponsoring KM ${km}.</p>
-        <p class="text-dark/80 leading-7">
-          Please <strong>copy</strong> this code.
-        </p>
-        <div class="rounded-xl border border-deepGreen/20 bg-cream px-4 py-4 text-center">
-          <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/80">Donation Code</p>
-          <p class="mt-2 font-mono text-3xl font-semibold tracking-widest text-deepGreen">${formattedCode}</p>
-        </div>
-        <p id="donationCodeStatus" class="hidden text-xs font-medium text-deepGreen"></p>
-        <button
-          type="button"
-          id="copyDonationCodeBtn"
-          class="inline-flex w-full items-center justify-center rounded-full border border-deepGreen/25 bg-white px-6 py-3 text-sm font-semibold text-deepGreen transition hover:bg-cream sm:text-base"
-        >
-          Copy Code
-        </button>
-        <button
-          type="button"
-          id="continueToDonateBtn"
-          class="inline-flex w-full items-center justify-center rounded-full bg-deepGreen px-6 py-3 text-base font-semibold text-cream transition hover:bg-[#0b3024]"
-        >
-          Next
-        </button>
-      </div>
-    `;
-
-    const copyCodeBtn = document.getElementById('copyDonationCodeBtn');
-    const continueBtn = document.getElementById('continueToDonateBtn');
-    const codeStatus = document.getElementById('donationCodeStatus');
-
-    if (copyCodeBtn) {
-      copyCodeBtn.addEventListener('click', async () => {
-        try {
-          await copyToClipboard(formattedCode);
-          if (codeStatus) {
-            codeStatus.textContent = 'Donation code copied.';
-            codeStatus.classList.remove('hidden');
-          }
-        } catch {
-          if (codeStatus) {
-            codeStatus.textContent = 'Unable to copy automatically. Please copy manually.';
-            codeStatus.classList.remove('hidden');
-          }
-        }
-      });
-    }
-
-    if (continueBtn) {
-      continueBtn.addEventListener('click', async () => {
-        try {
-          await copyToClipboard(formattedCode);
-        } catch {
-          // Continue even if clipboard permission is blocked.
-        }
-        renderDonationStep();
-      });
-    }
+    renderDonationStep();
   }
 
   function setContributeLoading(isLoading) {
@@ -941,15 +882,16 @@
     submitBtn.querySelector('.contribute-label').textContent = isLoading ? 'Submitting...' : 'Submit Contribution';
   }
 
-  function renderContributeConfirmation(km, contributionCode) {
+  function renderContributeConfirmation(km) {
+    const sponsoredKmLabel = `KM ${km}`;
     modalTitle.textContent = `Contribution Added • KM ${km}`;
     modalContent.innerHTML = `
       <p class="text-dark/80 leading-7">
-        Thank you. Complete your contribution on JustGiving. <strong>Copy</strong> and include your contribution code in the donation message.
+        Thank you. Complete your contribution on JustGiving. Include your sponsored KM in the donation message.
       </p>
       <div class="mt-5 rounded-xl border border-deepGreen/20 bg-cream px-4 py-4">
-        <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/80">Contribution Code</p>
-        <p class="mt-2 font-mono text-xl font-semibold tracking-widest text-deepGreen">${escapeHtml(contributionCode)}</p>
+        <p class="text-xs font-semibold uppercase tracking-wide text-deepGreen/80">Sponsored KM</p>
+        <p class="mt-2 font-mono text-xl font-semibold tracking-widest text-deepGreen">${escapeHtml(sponsoredKmLabel)}</p>
       </div>
       <a
         href="${justGivingUrl}"
@@ -960,7 +902,7 @@
         Donate on JustGiving
       </a>
       <p class="mt-4 text-sm leading-6 text-dark/70">
-        Include your contribution code in your donation note for matching.
+        Include this sponsored KM in your donation note for matching.
       </p>
     `;
   }
@@ -1049,7 +991,7 @@
         });
         liveContributionsByKm.set(km, existing);
         updateTile(km);
-        renderContributeConfirmation(km, payload.contributionCode);
+        renderContributeConfirmation(km);
       } catch (error) {
         showError('Network error. Please try again.');
       } finally {
@@ -1142,7 +1084,7 @@
 
         updateTile(km);
         renderProgress();
-        renderConfirmation(km, payload.verificationCode, amount);
+        renderConfirmation(km, amount);
         return;
       }
 
